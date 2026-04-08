@@ -2,6 +2,7 @@ package com.parkin.app.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -30,7 +31,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Profile(
+data class users(
     val id: String = "",
     @SerialName("first_name") val firstName: String? = null,
     @SerialName("last_name") val lastName: String? = null,
@@ -38,66 +39,36 @@ data class Profile(
     val role: String = "user"
 )
 
-@Composable
-fun ShortcutCard(
-    title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    color: Color,
-    onClick: () -> Unit = {},
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .height(110.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(SurfaceWhite)
-            .border(1.dp, BorderGray, RoundedCornerShape(20.dp))
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = color,
-                modifier = Modifier.size(32.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = title,
-                fontFamily = JakartaSans,
-                fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
-                color = Color(0xFF212529)
-            )
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
 
-    var nomeUsuario by remember { mutableStateOf("") }
+    var nomeUsuario by remember { mutableStateOf("...") }
 
     LaunchedEffect(Unit) {
         val user = supabase.auth.currentUserOrNull()
         if (user != null) {
             try {
                 val profile = supabase
-                    .from("profiles")
+                    .from("users")
                     .select { filter { eq("id", user.id) } }
-                    .decodeSingleOrNull<Profile>()
-                nomeUsuario = "${profile?.firstName ?: ""} ${profile?.lastName ?: ""}".trim()
-                if (nomeUsuario.isEmpty()) nomeUsuario = "Utilizador"
+                    .decodeSingleOrNull<users>()
+
+                if (profile != null) {
+                    nomeUsuario = "${profile.firstName ?: ""} ${profile.lastName ?: ""}".trim()
+                    if (nomeUsuario.isEmpty()) nomeUsuario = "Utilizador"
+                } else {
+                    nomeUsuario = "Perfil não encontrado"
+                }
             } catch (e: Exception) {
+                // Log para debug
+                android.util.Log.e("HomeScreen", "Erro: ${e.message}")
                 nomeUsuario = "Utilizador"
             }
         } else {
             nomeUsuario = "Sem sessão"
         }
     }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -132,88 +103,7 @@ fun HomeScreen(navController: NavController) {
                 .padding(16.dp)
         ) {
 
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(SurfaceWhite)
-                    .border(1.dp, BorderGray, RoundedCornerShape(20.dp))
-                    .padding(20.dp)
-            ) {
-                Column {
-                    Text(
-                        text = "Sessão Ativa",
-                        color = Color(0xFF212529),
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = JakartaSans,
-                        fontSize = 16.sp
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "Entrada",
-                                color = Color(0xFF64748B),
-                                fontSize = 11.sp
-                            )
-                            Text(
-                                text = "--:--",
-                                color = Color(0xFF212529),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "Duração",
-                                color = Color(0xFF64748B),
-                                fontSize = 11.sp
-                            )
-                            Text(
-                                text = "0m",
-                                color = Color(0xFF212529),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "Valor",
-                                color = Color(0xFF64748B),
-                                fontSize = 11.sp
-                            )
-                            Text(
-                                text = "0,00€",
-                                color = Color(0xFF1E56A0),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = { },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF1E56A0)
-                        )
-                    ) {
-                        Text(
-                            text = "Pagar e sair",
-                            fontFamily = JakartaSans,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
-                }
-            }
+            ActiveSessionCard()
 
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -226,48 +116,133 @@ fun HomeScreen(navController: NavController) {
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
-            // Linha 1 — NFC e Histórico
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                ShortcutCard(
-                    title = "Entrada NFC",
-                    icon = Icons.Default.Nfc,
-                    color = Color(0xFF1E56A0),
-                    onClick = { navController.navigate("nfc") },
-                    modifier = Modifier.weight(1f)
-                )
-                ShortcutCard(
-                    title = "Histórico",
-                    icon = Icons.Default.History,
-                    color = Color(0xFF1E56A0),
-                    onClick = { navController.navigate("history") },
-                    modifier = Modifier.weight(1f)
-                )
-            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    ShortcutCard(
+                        title = "Entrada NFC",
+                        icon = Icons.Default.Nfc,
+                        color = Color(0xFF1E56A0),
+                        onClick = { navController.navigate("nfc") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    ShortcutCard(
+                        title = "Histórico",
+                        icon = Icons.Default.History,
+                        color = Color(0xFF1E56A0),
+                        onClick = { navController.navigate("history") },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                ShortcutCard(
-                    title = "Pagamentos",
-                    icon = Icons.Default.Payment,
-                    color = Color(0xFF1E56A0),
-                    onClick = { navController.navigate("payments") },
-                    modifier = Modifier.weight(1f)
-                )
-                ShortcutCard(
-                    title = "Perfil",
-                    icon = Icons.Default.Person,
-                    color = Color(0xFF1E56A0),
-                    onClick = { navController.navigate("profile") },
-                    modifier = Modifier.weight(1f)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    ShortcutCard(
+                        title = "Pagamentos",
+                        icon = Icons.Default.Payment,
+                        color = Color(0xFF1E56A0),
+                        onClick = { navController.navigate("payments") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    ShortcutCard(
+                        title = "Perfil",
+                        icon = Icons.Default.Person,
+                        color = Color(0xFF1E56A0),
+                        onClick = { navController.navigate("profile") },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+fun ShortcutCard(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    color: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .height(110.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(SurfaceWhite)
+            .border(1.dp, BorderGray, RoundedCornerShape(20.dp))
+            .clickable { onClick() }
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = color,
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = title,
+                fontFamily = JakartaSans,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                color = Color(0xFF212529)
+            )
+        }
+    }
+}
+
+@Composable
+fun ActiveSessionCard() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(SurfaceWhite)
+            .border(1.dp, BorderGray, RoundedCornerShape(20.dp))
+            .padding(20.dp)
+    ) {
+        Column {
+            Text(
+                text = "Sessão Ativa",
+                color = Color(0xFF212529),
+                fontWeight = FontWeight.Bold,
+                fontFamily = JakartaSans,
+                fontSize = 16.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                SessionInfoItem("Entrada", "--:--")
+                SessionInfoItem("Duração", "0m")
+                SessionInfoItem("Valor", "0,00€", Color(0xFF1E56A0))
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = {  },
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E56A0))
+            ) {
+                Text("Pagar e sair", fontWeight = FontWeight.Bold, color = Color.White)
+            }
+        }
+    }
+}
+
+@Composable
+fun SessionInfoItem(label: String, value: String, valueColor: Color = Color(0xFF212529)) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = label, color = Color(0xFF64748B), fontSize = 11.sp)
+        Text(text = value, color = valueColor, fontWeight = FontWeight.Bold, fontSize = 15.sp)
     }
 }

@@ -60,11 +60,7 @@ fun LoginScreen(
     ) {
         Spacer(modifier = Modifier.height(60.dp))
 
-        Image(
-            painter = painterResource(id = R.mipmap.parkin_logo_foreground),
-            contentDescription = null,
-            modifier = Modifier.size(140.dp)
-        )
+
         Text(
             text = "ParkIn",
             fontSize = 28.sp,
@@ -141,6 +137,7 @@ fun LoginScreen(
 
                 Button(
                     onClick = {
+
                         if (emailInput.isEmpty() || passwordInput.isEmpty()) {
                             mensagem = "Preencha todos os campos"
                             return@Button
@@ -200,6 +197,8 @@ fun LoginScreen(
 @Composable
 fun RegisterScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToHome: () -> Unit,
+    onNavigateToRegister: () -> Unit,
 
     ) {
     var firstName by remember { mutableStateOf("") }
@@ -221,11 +220,6 @@ fun RegisterScreen(
     ) {
         Spacer(modifier = Modifier.height(40.dp))
 
-        Image(
-            painter = painterResource(id = R.drawable.parkin_logo_foreground),
-            contentDescription = null,
-            modifier = Modifier.size(140.dp)
-        )
 
         Spacer(modifier = Modifier.height(8.dp))
 
