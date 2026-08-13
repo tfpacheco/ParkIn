@@ -8,7 +8,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Nfc
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,21 +16,47 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
 import com.parkin.app.ui.theme.BorderGray
 import com.parkin.app.ui.theme.JakartaSans
 import com.parkin.app.ui.theme.LightBg
 import com.parkin.app.ui.theme.SurfaceWhite
+import android.content.Intent
+import android.provider.Settings
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.parkin.app.ui.NfcStatus
+import com.parkin.app.ui.getNfcStatus
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NFCScreen(navController: NavController) {
 
-    // Animação de pulso
+    val context = LocalContext.current
+    var nfcStatus by remember { mutableStateOf(getNfcStatus(context)) }
+
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                nfcStatus = getNfcStatus(context)
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
     val infiniteTransition = rememberInfiniteTransition(label = "nfc_pulse")
     val scale by infiniteTransition.animateFloat(
         initialValue = 1f,
@@ -79,6 +104,21 @@ fun NFCScreen(navController: NavController) {
         label = "alpha2"
     )
 
+    if (nfcStatus == NfcStatus.DISABLED) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text("NFC desativado") },
+            text = { Text("Para usar o ParkIn, ativa o NFC nas definições do telemóvel.") },
+            confirmButton = {
+                Button(onClick = {
+                    context.startActivity(Intent(Settings.ACTION_NFC_SETTINGS))
+                }) {
+                    Text("Abrir definições")
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -93,7 +133,7 @@ fun NFCScreen(navController: NavController) {
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
-                            imageVector = androidx.compose.material.icons.Icons.Default.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Voltar",
                             tint = Color.White
                         )
@@ -114,7 +154,6 @@ fun NFCScreen(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-
 
             Box(
                 contentAlignment = Alignment.Center,
@@ -169,7 +208,6 @@ fun NFCScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-
             Spacer(modifier = Modifier.height(40.dp))
 
             Box(
@@ -189,11 +227,17 @@ fun NFCScreen(navController: NavController) {
                         modifier = Modifier
                             .size(10.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF22C55E))
+                            .background(
+                                if (nfcStatus == NfcStatus.ENABLED) Color(0xFF22C55E) else Color(0xFFEF4444)
+                            )
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "NFC ativo",
+                        text = when (nfcStatus) {
+                            NfcStatus.ENABLED -> "NFC ativo"
+                            NfcStatus.DISABLED -> "NFC desativado"
+                            NfcStatus.NOT_SUPPORTED -> "NFC não suportado"
+                        },
                         fontFamily = JakartaSans,
                         fontSize = 13.sp,
                         color = Color(0xFF212529)

@@ -11,24 +11,23 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-// Configuramos apenas o LightColorScheme para garantir que as tuas cores
-// apareçam exatamente como definiste, independentemente do modo do telemóvel.
+
 private val ParkInColorScheme = lightColorScheme(
-    primary = AccentBlue,        // O teu azul de destaque
-    onPrimary = Color.White,     // Texto branco sobre o azul
+    primary = AccentBlue,
+    onPrimary = Color.White,
     primaryContainer = AccentBlue,
     onPrimaryContainer = Color.White,
 
-    secondary = TextSecondary,   // Cinza para textos secundários
+    secondary = TextSecondary,
     onSecondary = Color.White,
 
-    background = LightBg,        // O teu cinza muito claro de fundo
-    onBackground = TextPrimary,  // Texto quase preto no fundo
+    background = LightBg,
+    onBackground = TextPrimary,
 
-    surface = SurfaceWhite,      // Branco para os cartões/inputs
-    onSurface = TextPrimary,     // Texto quase preto sobre o branco
+    surface = SurfaceWhite,
+    onSurface = TextPrimary,
 
-    outline = BorderGray         // Cor para as bordas dos inputs
+    outline = BorderGray
 )
 
 @Composable
@@ -38,7 +37,7 @@ fun ParkInTheme(
     val colorScheme = ParkInColorScheme
     val view = LocalView.current
 
-    // Isto ajusta a barra de estado (onde fica a bateria/hora) para combinar com a app
+
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
@@ -49,7 +48,7 @@ fun ParkInTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography, // Usa as fontes padrão ou as que definires
+        typography = Typography,
         content = content
     )
 }

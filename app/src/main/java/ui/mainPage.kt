@@ -61,7 +61,6 @@ fun HomeScreen(navController: NavController) {
                     nomeUsuario = "Perfil não encontrado"
                 }
             } catch (e: Exception) {
-                // Log para debug
                 android.util.Log.e("HomeScreen", "Erro: ${e.message}")
                 nomeUsuario = "Utilizador"
             }
@@ -123,7 +122,7 @@ fun HomeScreen(navController: NavController) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     ShortcutCard(
-                        title = "Entrada NFC",
+                        title = "Entrar/Sair",
                         icon = Icons.Default.Nfc,
                         color = Color(0xFF1E56A0),
                         onClick = { navController.navigate("nfc") },

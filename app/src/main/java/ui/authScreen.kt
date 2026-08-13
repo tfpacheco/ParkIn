@@ -61,6 +61,12 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(60.dp))
 
 
+        Image(
+            painter = painterResource(id = R.drawable.parkin_logo_f),
+            contentDescription = "App Logo",
+            modifier = Modifier.size(100.dp)
+        )
+        Spacer(modifier = Modifier.height(10.dp))
         Text(
             text = "ParkIn",
             fontSize = 28.sp,
@@ -223,6 +229,11 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        Image(
+            painter = painterResource(id = R.drawable.parkin_logo_f),
+            contentDescription = "App Logo",
+            modifier = Modifier.size(100.dp)
+        )
         Text(
             text = "ParkIn",
             fontSize = 28.sp,
