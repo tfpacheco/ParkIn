@@ -1,5 +1,11 @@
 package com.parkin.app.ui
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.nfc.NfcAdapter
+import android.provider.Settings
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,46 +23,39 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
-import com.parkin.app.ui.theme.BorderGray
-import com.parkin.app.ui.theme.JakartaSans
-import com.parkin.app.ui.theme.LightBg
-import com.parkin.app.ui.theme.SurfaceWhite
-import android.content.Intent
-import android.provider.Settings
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.parkin.app.ui.NfcStatus
-import com.parkin.app.ui.getNfcStatus
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NFCScreen(navController: NavController) {
 
+    val primary = MaterialTheme.colorScheme.primary
+    val onPrimary = MaterialTheme.colorScheme.onPrimary
+    val background = MaterialTheme.colorScheme.background
+    val surface = MaterialTheme.colorScheme.surface
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val outline = MaterialTheme.colorScheme.outline
+    val successColor = Color(0xFF22C55E)
+    val errorColor = MaterialTheme.colorScheme.error
     val context = LocalContext.current
     var nfcStatus by remember { mutableStateOf(getNfcStatus(context)) }
 
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
+    DisposableEffect(context) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context?, intent: Intent?) {
                 nfcStatus = getNfcStatus(context)
             }
         }
-
-        lifecycleOwner.lifecycle.addObserver(observer)
+        val filter = IntentFilter(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED)
+        context.registerReceiver(receiver, filter)
 
         onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
+            context.unregisterReceiver(receiver)
         }
     }
+
     val infiniteTransition = rememberInfiniteTransition(label = "nfc_pulse")
     val scale by infiniteTransition.animateFloat(
         initialValue = 1f,
@@ -125,9 +124,8 @@ fun NFCScreen(navController: NavController) {
                 title = {
                     Text(
                         text = "Entrada NFC",
-                        fontFamily = JakartaSans,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        style = MaterialTheme.typography.titleLarge,
+                        color = onPrimary
                     )
                 },
                 navigationIcon = {
@@ -135,12 +133,20 @@ fun NFCScreen(navController: NavController) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Voltar",
-                            tint = Color.White
+                            tint = onPrimary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF1E56A0)
+                    containerColor = primary
+                ),
+                modifier = Modifier.clip(
+                    RoundedCornerShape(
+                        topStart = 0.dp,
+                        topEnd = 0.dp,
+                        bottomStart = 16.dp,
+                        bottomEnd = 16.dp
+                    )
                 )
             )
         }
@@ -149,7 +155,7 @@ fun NFCScreen(navController: NavController) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(LightBg)
+                .background(background)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -165,7 +171,7 @@ fun NFCScreen(navController: NavController) {
                         .size(160.dp)
                         .scale(ringScale1)
                         .clip(CircleShape)
-                        .background(Color(0xFF1E56A0).copy(alpha = ringAlpha1))
+                        .background(primary.copy(alpha = ringAlpha1))
                 )
 
                 Box(
@@ -173,7 +179,7 @@ fun NFCScreen(navController: NavController) {
                         .size(160.dp)
                         .scale(ringScale2)
                         .clip(CircleShape)
-                        .background(Color(0xFF1E56A0).copy(alpha = ringAlpha2))
+                        .background(primary.copy(alpha = ringAlpha2))
                 )
 
                 Box(
@@ -181,13 +187,13 @@ fun NFCScreen(navController: NavController) {
                         .size(120.dp)
                         .scale(scale)
                         .clip(CircleShape)
-                        .background(Color(0xFF1E56A0)),
+                        .background(primary),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Nfc,
                         contentDescription = "NFC",
-                        tint = Color.White,
+                        tint = onPrimary,
                         modifier = Modifier.size(56.dp)
                     )
                 }
@@ -197,25 +203,19 @@ fun NFCScreen(navController: NavController) {
 
             Text(
                 text = "Aproxime o dispositivo do leitor",
-                fontSize = 20.sp,
-                fontFamily = JakartaSans,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF212529),
-                textAlign = TextAlign.Center,
-                lineHeight = 28.sp,
-                letterSpacing = 0.5.sp
+                style = MaterialTheme.typography.titleMedium,
+                color = onSurface,
+                textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(52.dp))
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(SurfaceWhite)
-                    .border(1.dp, BorderGray, RoundedCornerShape(16.dp))
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(surface)
+                    .border(1.dp, outline, MaterialTheme.shapes.medium)
                     .padding(16.dp)
             ) {
                 Row(
@@ -228,7 +228,7 @@ fun NFCScreen(navController: NavController) {
                             .size(10.dp)
                             .clip(CircleShape)
                             .background(
-                                if (nfcStatus == NfcStatus.ENABLED) Color(0xFF22C55E) else Color(0xFFEF4444)
+                                if (nfcStatus == NfcStatus.ENABLED) successColor else errorColor
                             )
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -238,9 +238,8 @@ fun NFCScreen(navController: NavController) {
                             NfcStatus.DISABLED -> "NFC desativado"
                             NfcStatus.NOT_SUPPORTED -> "NFC não suportado"
                         },
-                        fontFamily = JakartaSans,
-                        fontSize = 13.sp,
-                        color = Color(0xFF212529)
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = onSurface
                     )
                 }
             }

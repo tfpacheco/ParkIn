@@ -18,11 +18,10 @@ fun PaymentFlow(navController: NavController, amount: Double) {
         PaymentSheet(context) { paymentResult ->
             when (paymentResult) {
                 is PaymentSheetResult.Completed -> {
-                    // TODO: Chamar função do Supabase para marcar como pago
+
                     navController.navigate("success_screen")
                 }
                 is PaymentSheetResult.Failed -> {
-                    // TODO: Mostrar um Snackbar de erro
                     println("Erro no pagamento: ${paymentResult.error}")
                 }
                 is PaymentSheetResult.Canceled -> {

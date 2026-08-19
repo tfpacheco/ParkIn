@@ -12,4 +12,4 @@ val TextPrimary = Color(0xFF212529)   // Quase preto (muito legível)
 val TextSecondary = Color(0xFF6C757D) // Cinza para textos menores
 
 // Cores de Destaque (Brand Colors)
-val AccentBlue = Color(0xFF1E56A0)    // O azul para os botões e ícones
+val AccentBlue = Color(0xFF4169E1)    // O azul para os botões e ícones

@@ -15,9 +15,9 @@ val JakartaSans = FontFamily(
     Font(R.font.plus_jakarta_sans_medium, FontWeight.Medium)
 )
 
-// 2. Configurar a Tipografia do Material3
+
 val Typography = Typography(
-    // Títulos Grandes (Ex: Nome da App)
+    // Títulos Grandes
     headlineLarge = TextStyle(
         fontFamily = JakartaSans,
         fontWeight = FontWeight.Bold,
@@ -33,7 +33,7 @@ val Typography = Typography(
         lineHeight = 24.sp,
         letterSpacing = 0.15.sp
     ),
-    // Texto normal (Inputs, Descrições)
+    // Texto normal
     bodyLarge = TextStyle(
         fontFamily = JakartaSans,
         fontWeight = FontWeight.Normal,
@@ -41,7 +41,7 @@ val Typography = Typography(
         lineHeight = 24.sp,
         letterSpacing = 0.5.sp
     ),
-    // Texto pequeno (Labels)
+    // Texto pequeno
     labelMedium = TextStyle(
         fontFamily = JakartaSans,
         fontWeight = FontWeight.Medium,
