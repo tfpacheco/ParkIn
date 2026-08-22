@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -125,7 +126,9 @@ fun NFCScreen(navController: NavController) {
                     Text(
                         text = "Entrada NFC",
                         style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
                         color = onPrimary
+
                     )
                 },
                 navigationIcon = {
@@ -140,12 +143,14 @@ fun NFCScreen(navController: NavController) {
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = primary
                 ),
-                modifier = Modifier.clip(
+                modifier = Modifier
+                    .height(60.dp)
+                    .clip(
                     RoundedCornerShape(
                         topStart = 0.dp,
                         topEnd = 0.dp,
-                        bottomStart = 16.dp,
-                        bottomEnd = 16.dp
+                        bottomStart = 14.dp,
+                        bottomEnd = 14.dp
                     )
                 )
             )

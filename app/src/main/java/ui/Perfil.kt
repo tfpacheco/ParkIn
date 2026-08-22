@@ -15,11 +15,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -46,7 +48,12 @@ fun ProfileScreen(
     navController: NavController,
     isDarkTheme: Boolean,
     onThemeChange: (Boolean) -> Unit
+
+
 ) {
+
+    val onPrimary = MaterialTheme.colorScheme.onPrimary
+
     val user = supabase.auth.currentUserOrNull()
 
     val email = user?.email ?: "Sem email"
@@ -80,13 +87,24 @@ fun ProfileScreen(
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
+
+                    }
+
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Voltar",
+                            tint = onPrimary
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color(0xFF4169E1)
                 ),
                 modifier = Modifier
-                    .height(80.dp)
+                    .height(60.dp)
                     .clip(
                         RoundedCornerShape(
                             topStart = 0.dp,

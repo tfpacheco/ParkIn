@@ -32,10 +32,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
 import com.parkin.app.supabase
-import com.parkin.app.ui.theme.BorderGray
 import com.parkin.app.ui.theme.JakartaSans
-import com.parkin.app.ui.theme.LightBg
-import com.parkin.app.ui.theme.SurfaceWhite
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import kotlinx.serialization.SerialName
@@ -59,6 +56,16 @@ fun HomeScreen(navController: NavController) {
 
     val context = LocalContext.current
     var nfcStatus by remember { mutableStateOf(getNfcStatus(context)) }
+
+    // Cores vêm do tema M3 (MaterialTheme.colorScheme), não de hex fixos,
+    // para que o dark mode se aplique corretamente também nesta página.
+    val primary = MaterialTheme.colorScheme.primary
+    val onPrimary = MaterialTheme.colorScheme.onPrimary
+    val background = MaterialTheme.colorScheme.background
+    val surface = MaterialTheme.colorScheme.surface
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceMuted = MaterialTheme.colorScheme.secondary
+    val outline = MaterialTheme.colorScheme.outline
 
     DisposableEffect(context) {
         val receiver = object : BroadcastReceiver() {
@@ -96,6 +103,7 @@ fun HomeScreen(navController: NavController) {
                     .decodeSingleOrNull<UserProfile>()
                 userRole = profile?.role ?: "user"
             } catch (e: Exception) {
+                android.util.Log.e("HomeScreen", "Erro ao carregar perfil", e)
                 userRole = "user"
             }
         }
@@ -129,28 +137,29 @@ fun HomeScreen(navController: NavController) {
                             text = "Bem-vindo de volta,",
                             fontFamily = JakartaSans,
                             fontSize = 18.sp,
-                            color = Color.White.copy(alpha = 0.7f),
+                            fontWeight = FontWeight.Bold,
+                            color = onPrimary.copy(alpha = 0.7f),
                         )
                         Text(
                             text = nomeUsuario.ifEmpty { "Utilizador" },
                             fontFamily = JakartaSans,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = onPrimary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF4169E1),
+                    containerColor = primary,
                 ),
                 modifier = Modifier
-                    .height(80.dp)
+                    .height(60.dp)
                     .clip(
                         RoundedCornerShape(
                             topStart = 0.dp,
                             topEnd = 0.dp,
-                            bottomStart = 15.dp,
-                            bottomEnd = 15.dp,
+                            bottomStart = 14.dp,
+                            bottomEnd = 14.dp,
                         )
                     ),
             )
@@ -160,7 +169,7 @@ fun HomeScreen(navController: NavController) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(LightBg)
+                .background(background)
                 .padding(20.dp)
         ) {
 
@@ -173,7 +182,7 @@ fun HomeScreen(navController: NavController) {
                 fontFamily = JakartaSans,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
-                color = Color(0xFF212529),
+                color = onSurface,
                 modifier = Modifier.padding(bottom = 15.dp)
             )
 
@@ -185,14 +194,14 @@ fun HomeScreen(navController: NavController) {
                     ShortcutCard(
                         title = "Entrar/Sair",
                         icon = Icons.Default.Nfc,
-                        color = Color(0xFF1D52BA),
+                        color = primary,
                         onClick = { navController.navigate("nfc") },
                         modifier = Modifier.weight(1f)
                     )
                     ShortcutCard(
                         title = "Histórico",
                         icon = Icons.Default.History,
-                        color = Color(0xFF1D52BA),
+                        color = primary,
                         onClick = { navController.navigate("history") },
                         modifier = Modifier.weight(1f)
                     )
@@ -205,14 +214,14 @@ fun HomeScreen(navController: NavController) {
                     ShortcutCard(
                         title = "Pagamentos",
                         icon = Icons.Default.Payment,
-                        color = Color(0xFF1D52BA),
+                        color = primary,
                         onClick = { navController.navigate("payments") },
                         modifier = Modifier.weight(1f)
                     )
                     ShortcutCard(
                         title = "Perfil",
                         icon = Icons.Default.Person,
-                        color = Color(0xFF1D52BA),
+                        color = primary,
                         onClick = { navController.navigate("profile") },
                         modifier = Modifier.weight(1f)
                     )
@@ -222,7 +231,7 @@ fun HomeScreen(navController: NavController) {
                     ShortcutCard(
                         title = "Painel Admin",
                         icon = Icons.Default.AdminPanelSettings,
-                        color = Color(0xFF1D52BA),
+                        color = primary,
                         onClick = { navController.navigate("admin_panel") },
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -244,8 +253,8 @@ fun ShortcutCard(
         modifier = modifier
             .height(120.dp)
             .clip(RoundedCornerShape(20.dp))
-            .background(SurfaceWhite)
-            .border(1.dp, BorderGray, RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(20.dp))
             .clickable { onClick() }
             .padding(16.dp),
         contentAlignment = Alignment.Center
@@ -263,7 +272,7 @@ fun ShortcutCard(
                 fontFamily = JakartaSans,
                 fontWeight = FontWeight.Bold,
                 fontSize = 13.sp,
-                color = Color(0xFF212529)
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -275,14 +284,14 @@ fun ActiveSessionCard() {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(SurfaceWhite)
-            .border(1.dp, BorderGray, RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(20.dp))
             .padding(20.dp)
     ) {
         Column {
             Text(
                 text = "Sessão Ativa",
-                color = Color(0xFF212529),
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 fontFamily = JakartaSans,
                 fontSize = 16.sp
@@ -303,18 +312,26 @@ fun ActiveSessionCard() {
                     .fillMaxWidth()
                     .height(48.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4169E1))
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text("Pagar e sair", fontWeight = FontWeight.Bold, color = Color.White)
+                Text(
+                    "Pagar e sair",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
             }
         }
     }
 }
 
 @Composable
-fun SessionInfoItem(label: String, value: String, valueColor: Color = Color(0xFF212529)) {
+fun SessionInfoItem(
+    label: String,
+    value: String,
+    valueColor: Color = MaterialTheme.colorScheme.onSurface
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = label, color = Color(0xFF64748B), fontSize = 11.sp)
+        Text(text = label, color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
         Text(text = value, color = valueColor, fontWeight = FontWeight.Bold, fontSize = 15.sp)
     }
 }
