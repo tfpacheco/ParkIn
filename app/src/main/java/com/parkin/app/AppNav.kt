@@ -17,6 +17,7 @@ import androidx.navigation.compose.rememberNavController
 import com.parkin.app.ui.HomeScreen
 import com.parkin.app.ui.LoginScreen
 import com.parkin.app.ui.NFCScreen
+import com.parkin.app.ui.PaymentScreen
 import com.parkin.app.ui.ProfileScreen
 import io.github.jan.supabase.auth.auth
 import ui.RegisterScreen
@@ -77,9 +78,13 @@ fun AppNavigation(
 
         composable("register") {
             RegisterScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToHome = {
+                    navController.navigate("home") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                },
+                onNavigateToRegister = { navController.navigate("register") }
             )
         }
 
@@ -101,6 +106,11 @@ fun AppNavigation(
                 isDarkTheme = isDarkTheme,
                 onThemeChange = onThemeChange
             )
+
+            }
+        composable("payment/{amount}") { backStackEntry ->
+            val amount = backStackEntry.arguments?.getString("amount")?.toIntOrNull() ?: 0
+            PaymentScreen(navController = navController, amountCents = amount)
+        }
         }
     }
-}

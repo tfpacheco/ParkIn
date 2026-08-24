@@ -173,7 +173,7 @@ fun HomeScreen(navController: NavController) {
                 .padding(20.dp)
         ) {
 
-            ActiveSessionCard()
+            ActiveSessionCard(navController = navController, amountCents = 250)
 
             Spacer(modifier = Modifier.height(30.dp))
 
@@ -215,7 +215,7 @@ fun HomeScreen(navController: NavController) {
                         title = "Pagamentos",
                         icon = Icons.Default.Payment,
                         color = primary,
-                        onClick = { navController.navigate("payments") },
+                        onClick = { navController.navigate("payment/{amount}") },
                         modifier = Modifier.weight(1f)
                     )
                     ShortcutCard(
@@ -279,7 +279,9 @@ fun ShortcutCard(
 }
 
 @Composable
-fun ActiveSessionCard() {
+fun ActiveSessionCard(navController: NavController, amountCents: Int) {
+
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -307,7 +309,7 @@ fun ActiveSessionCard() {
             }
             Spacer(modifier = Modifier.height(16.dp))
             Button(
-                onClick = { },
+                onClick = {navController.navigate("payment/$amountCents") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),

@@ -1,5 +1,6 @@
 package com.parkin.app.ui
 
+import android.hardware.camera2.params.BlackLevelPattern
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.parkin.app.supabase
 import com.parkin.app.ui.theme.JakartaSans
+import com.parkin.app.ui.theme.SurfaceWhite
+import com.parkin.app.ui.theme.TextPrimary
 import io.github.jan.supabase.auth.auth
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,6 +54,8 @@ fun ProfileScreen(
 
 
 ) {
+
+    val onSurface = MaterialTheme.colorScheme.onSurface
 
     val onPrimary = MaterialTheme.colorScheme.onPrimary
 
@@ -157,10 +162,19 @@ fun ProfileScreen(
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                     )
+
                 }
             }
-
             Spacer(modifier = Modifier.height(40.dp))
+            Text(
+                text = "Preferencias",
+                fontFamily = JakartaSans,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = onSurface,
+                modifier = Modifier.padding(bottom = 15.dp)
+                            )
+            Spacer(modifier = Modifier.height(20.dp))
 
             Row(
                 modifier = Modifier

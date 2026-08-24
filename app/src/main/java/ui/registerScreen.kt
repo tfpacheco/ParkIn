@@ -58,6 +58,8 @@ import kotlinx.serialization.json.put
 @Composable
 fun RegisterScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToHome: () -> Unit,
+    onNavigateToRegister: () -> Unit,
 ) {
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
