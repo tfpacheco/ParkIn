@@ -75,5 +75,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("com.stripe:stripe-android:20.35.0")
     implementation("com.stripe:stripe-android:20.48.0")
+    implementation("com.stripe:stripe-android:20.38.0")
 
 }

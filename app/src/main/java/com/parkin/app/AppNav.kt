@@ -11,9 +11,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.parkin.app.ui.HomeScreen
 import com.parkin.app.ui.LoginScreen
 import com.parkin.app.ui.NFCScreen
@@ -35,7 +37,6 @@ fun AppNavigation(
 
     LaunchedEffect(Unit) {
         supabase.auth.awaitInitialization()
-
         val session = supabase.auth.currentSessionOrNull()
 
         startDestination = if (session != null) {
@@ -52,7 +53,6 @@ fun AppNavigation(
         ) {
             CircularProgressIndicator()
         }
-
         return
     }
 
@@ -60,14 +60,11 @@ fun AppNavigation(
         navController = navController,
         startDestination = startDestination!!
     ) {
-
         composable("login") {
             LoginScreen(
                 onNavigateToHome = {
                     navController.navigate("home") {
-                        popUpTo("login") {
-                            inclusive = true
-                        }
+                        popUpTo("login") { inclusive = true }
                     }
                 },
                 onNavigateToRegister = {
@@ -106,11 +103,18 @@ fun AppNavigation(
                 isDarkTheme = isDarkTheme,
                 onThemeChange = onThemeChange
             )
+        }
 
-            }
-        composable("payment/{amount}") { backStackEntry ->
-            val amount = backStackEntry.arguments?.getString("amount")?.toIntOrNull() ?: 0
-            PaymentScreen(navController = navController, amountCents = amount)
+        composable(
+            route = "payment/{amount}",
+            arguments = listOf(navArgument("amount") { type = NavType.IntType })
+        ) { backStackEntry ->
+
+            val amount = backStackEntry.arguments?.getInt("amount") ?: 0
+            PaymentScreen(
+                navController = navController,
+                amountCents = amount
+            )
         }
         }
     }

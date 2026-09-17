@@ -109,7 +109,7 @@ fun ProfileScreen(
                     containerColor = Color(0xFF4169E1)
                 ),
                 modifier = Modifier
-                    .height(60.dp)
+                    .height(70.dp)
                     .clip(
                         RoundedCornerShape(
                             topStart = 0.dp,
@@ -174,7 +174,7 @@ fun ProfileScreen(
                 color = onSurface,
                 modifier = Modifier.padding(bottom = 15.dp)
                             )
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(5.dp))
 
             Row(
                 modifier = Modifier

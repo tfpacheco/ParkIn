@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Nfc
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Person
@@ -50,22 +51,14 @@ data class UserProfile(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
-
     var nomeUsuario by remember { mutableStateOf("") }
     var userRole: String? by remember { mutableStateOf("user") }
-
     val context = LocalContext.current
     var nfcStatus by remember { mutableStateOf(getNfcStatus(context)) }
 
-    // Cores vêm do tema M3 (MaterialTheme.colorScheme), não de hex fixos,
-    // para que o dark mode se aplique corretamente também nesta página.
     val primary = MaterialTheme.colorScheme.primary
-    val onPrimary = MaterialTheme.colorScheme.onPrimary
     val background = MaterialTheme.colorScheme.background
-    val surface = MaterialTheme.colorScheme.surface
     val onSurface = MaterialTheme.colorScheme.onSurface
-    val onSurfaceMuted = MaterialTheme.colorScheme.secondary
-    val outline = MaterialTheme.colorScheme.outline
 
     DisposableEffect(context) {
         val receiver = object : BroadcastReceiver() {
@@ -128,40 +121,40 @@ fun HomeScreen(navController: NavController) {
         topBar = {
             TopAppBar(
                 title = {
-                    Row(
-                        modifier = Modifier.fillMaxHeight(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(RoundedCornerShape(9.dp))
+                                .background(Color(0xFFFFFFFF)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "P",
+                                color = Color(0xFF2563EB),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 20.sp
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "Bem-vindo de volta,",
-                            fontFamily = JakartaSans,
-                            fontSize = 18.sp,
+                            text = "ParkIn",
                             fontWeight = FontWeight.Bold,
-                            color = onPrimary.copy(alpha = 0.7f),
-                        )
-                        Text(
-                            text = nomeUsuario.ifEmpty { "Utilizador" },
-                            fontFamily = JakartaSans,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = onPrimary
+                            color = Color.White,
+                            fontSize = 20.sp
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = primary,
-                ),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = primary),
                 modifier = Modifier
-                    .height(60.dp)
+                    .height(70.dp)
                     .clip(
                         RoundedCornerShape(
-                            topStart = 0.dp,
-                            topEnd = 0.dp,
                             bottomStart = 14.dp,
                             bottomEnd = 14.dp,
                         )
-                    ),
+                    )
             )
         }
     ) { innerPadding ->
@@ -215,7 +208,7 @@ fun HomeScreen(navController: NavController) {
                         title = "Pagamentos",
                         icon = Icons.Default.Payment,
                         color = primary,
-                        onClick = { navController.navigate("payment/{amount}") },
+                        onClick = { navController.navigate("payment/250") }, // Passa o valor 250 cêntimos
                         modifier = Modifier.weight(1f)
                     )
                     ShortcutCard(
@@ -280,8 +273,6 @@ fun ShortcutCard(
 
 @Composable
 fun ActiveSessionCard(navController: NavController, amountCents: Int) {
-
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -298,7 +289,9 @@ fun ActiveSessionCard(navController: NavController, amountCents: Int) {
                 fontFamily = JakartaSans,
                 fontSize = 16.sp
             )
+
             Spacer(modifier = Modifier.height(12.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -307,9 +300,11 @@ fun ActiveSessionCard(navController: NavController, amountCents: Int) {
                 SessionInfoItem("Duração", "0m")
                 SessionInfoItem("Valor", "0,00€")
             }
+
             Spacer(modifier = Modifier.height(16.dp))
+
             Button(
-                onClick = {navController.navigate("payment/$amountCents") },
+                onClick = { navController.navigate("payment/$amountCents") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
@@ -317,7 +312,7 @@ fun ActiveSessionCard(navController: NavController, amountCents: Int) {
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text(
-                    "Pagar e sair",
+                    text = "Pagar e sair",
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimary
                 )

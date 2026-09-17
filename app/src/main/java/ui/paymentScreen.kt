@@ -1,24 +1,29 @@
 package com.parkin.app.ui
 
-import android.util.Log
+import android.R.id.primary
+import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -28,334 +33,309 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
+import java.time.Instant
 
-@Serializable
-data class PaymentInsert(
-    val user_id: String,
-    val amount_cents: Int,
-    val status: String,
-    val parking_session_id: String? = null
-)
-
-private fun formatCardNumber(value: TextFieldValue): TextFieldValue {
-    val digits = value.text
-        .filter { it.isDigit() }
-        .take(16)
-
-    val formatted = digits
-        .chunked(4)
-        .joinToString(" ")
-
-    val cursorPosition = calculateCursorPosition(
-        original = value,
-        formatted = formatted
-    )
-    return TextFieldValue(
-        text = formatted,
-        selection = TextRange(cursorPosition)
-    )
-}
-
-private fun formatExpiry(input: String): String {
-    val digits = input.filter { it.isDigit() }.take(4)
-    return when {
-        digits.length >= 3 -> "${digits.substring(0, 2)}/${digits.substring(2)}"
-        else -> digits
-    }
-}
-
-private fun calculateCursorPosition(
-    original: TextFieldValue,
-    formatted: String
-): Int {
-    val originalCursor = original.selection.start
-
-    val digitsBeforeCursor = original.text
-        .take(originalCursor)
-        .count { it.isDigit() }
-
-    if (digitsBeforeCursor == 0) {
-        return 0
-    }
-
-    var digitCount = 0
-
-    for (i in formatted.indices) {
-        if (formatted[i].isDigit()) {
-            digitCount++
-
-            if (digitCount == digitsBeforeCursor) {
-                return i + 1
-            }
-        }
-    }
-
-    return formatted.length
-}
-
-private fun isCardValid(
-    number: String,
-    expiry: String,
-    cvc: String
-): Boolean {
-    val digits = number.filter { it.isDigit() }
-    val expDigits = expiry.filter { it.isDigit() }
-
-    return digits.length == 16 &&
-            expDigits.length == 4 &&
-            cvc.length in 3..4
-}
+enum class PaymentMethod { MBWAY, CARD }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaymentScreen(
     navController: NavController,
-    amountCents: Int,
-    parkingSessionId: String? = null
+    amountCents: Int
+
+
 ) {
     val scope = rememberCoroutineScope()
-
-    var cardNumber by remember { mutableStateOf(TextFieldValue("")) }
-    var expiry by remember { mutableStateOf("") }
-    var cvc by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(false) }
-    var paymentDone by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
 
     val primary = MaterialTheme.colorScheme.primary
-    val onPrimary = MaterialTheme.colorScheme.onPrimary
     val background = MaterialTheme.colorScheme.background
-    val surface = MaterialTheme.colorScheme.surface
     val onSurface = MaterialTheme.colorScheme.onSurface
-    val outline = MaterialTheme.colorScheme.outline
-    val successColor = Color(0xFF22C55E)
 
-    fun processarPagamento() {
-        val user = supabase.auth.currentUserOrNull()
-        if (user == null) {
-            errorMessage = "Sem sessão ativa."
-            return
-        }
-        if (!isCardValid(cardNumber.text, expiry, cvc)) {
-            errorMessage = "Verifica os dados do cartão."
-            return
-        }
 
-        errorMessage = null
-        isLoading = true
-
-        scope.launch {
-            try {
-                delay(1000)
-
-                supabase.from("pagamentos").insert(
-                    PaymentInsert(
-                        user_id = user.id,
-                        amount_cents = amountCents,
-                        status = "completed",
-                        parking_session_id = parkingSessionId
-                    )
-                )
-
-                isLoading = false
-                paymentDone = true
-            } catch (e: Exception) {
-                Log.e("PaymentScreen", "Erro ao registar pagamento", e)
-                isLoading = false
-                errorMessage = "Erro ao processar pagamento. Tenta novamente."
-            }
-        }
-    }
+    var selectedMethod by remember { mutableStateOf(PaymentMethod.MBWAY) }
+    var phoneNumber by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    var stepMessage by remember { mutableStateOf("") }
+    var valorEuros = ""
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = "Pagamento",
-                        fontFamily = JakartaSans,
-                        fontWeight = FontWeight.Bold,
-                        color = onPrimary
-                    )
+                    Text("Pagamentos", fontFamily = JakartaSans, fontWeight = FontWeight.Bold, color = Color.White)
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Voltar",
-                            tint = onPrimary
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar",  tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = primary),
-                modifier = Modifier
-                    .height(60.dp)
-                    .clip(
-                        RoundedCornerShape(
-                            topStart = 0.dp,
-                            topEnd = 0.dp,
-                            bottomStart = 14.dp,
-                            bottomEnd = 14.dp
+                    modifier = Modifier
+                        .height(70.dp)
+                        .clip(
+                            RoundedCornerShape(
+                                bottomStart = 14.dp,
+                                bottomEnd = 14.dp,
+                            )
                         )
-                    )
-            )
+                )
         }
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(background)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
+                .background(MaterialTheme.colorScheme.background)
+                .padding(20.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Spacer(modifier = Modifier.height(12.dp))
+            Column(modifier = Modifier.fillMaxWidth()) {
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(surface, RoundedCornerShape(16.dp))
-                    .padding(24.dp)
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "Valor a pagar",
-                        fontFamily = JakartaSans,
-                        color = onSurface.copy(alpha = 0.7f)
-                    )
-                    Text(
-                        text = "%.2f €".format(amountCents / 100.0),
-                        fontFamily = JakartaSans,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 32.sp,
-                        color = onSurface
-                    )
-                }
-            }
 
-            Spacer(modifier = Modifier.height(28.dp))
-
-            if (paymentDone) {
-                Column(
+                Card(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.4f)
+                    )
                 ) {
-                    Spacer(modifier = Modifier.height(40.dp))
-                    Box(
+                    Column(
                         modifier = Modifier
-                            .size(80.dp)
-                            .background(successColor, shape = CircleShape),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(40.dp)
+                        Text(
+                            text = "Valor do Estacionamento",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontFamily = JakartaSans,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "${valorEuros} €",
+                            fontSize = 38.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontFamily = JakartaSans
                         )
                     }
-                    Spacer(modifier = Modifier.height(20.dp))
-                    Text(
-                        text = "Pagamento concluído",
-                        fontFamily = JakartaSans,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp,
-                        color = onSurface
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Button(
-                        onClick = { navController.popBackStack("home", inclusive = false) },
-                        modifier = Modifier.fillMaxWidth().height(50.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = primary)
-                    ) {
-                        Text("Voltar ao início", fontWeight = FontWeight.Bold, color = onPrimary)
-                    }
-                }
-            } else {
-                Text(
-                    text = "Dados do cartão",
-                    fontFamily = JakartaSans,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = onSurface,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
-                )
-
-                OutlinedTextField(
-                    value = cardNumber,
-                    onValueChange = { newValue ->
-                        cardNumber = formatCardNumber(newValue)
-                    },
-                    label = { Text("Número do cartão") },
-                    placeholder = { Text("0000 0000 0000 0000") },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number
-                    ),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = primary,
-                        unfocusedBorderColor = outline,
-                        cursorColor = primary
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedTextField(
-                        value = expiry,
-                        onValueChange = { expiry = formatExpiry(it) },
-                        label = { Text("Validade") },
-                        placeholder = { Text("MM/AA") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = primary,
-                            unfocusedBorderColor = outline,
-                            cursorColor = primary
-                        )
-                    )
-                    OutlinedTextField(
-                        value = cvc,
-                        onValueChange = { cvc = it.filter { c -> c.isDigit() }.take(4) },
-                        label = { Text("CVC") },
-                        placeholder = { Text("123") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = primary,
-                            unfocusedBorderColor = outline,
-                            cursorColor = primary
-                        )
-                    )
-                }
-
-                errorMessage?.let {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(text = it, color = MaterialTheme.colorScheme.error, fontFamily = JakartaSans, fontSize = 13.sp)
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Button(
-                    onClick = { processarPagamento() },
-                    enabled = !isLoading,
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = primary)
+                Text(
+                    text = "Método de Pagamento",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontFamily = JakartaSans
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(color = onPrimary, modifier = Modifier.size(22.dp))
-                    } else {
-                        Text("Pagar agora", fontWeight = FontWeight.Bold, color = onPrimary)
+                    PaymentMethodSelector(
+                        title = "MB WAY",
+                        icon = Icons.Default.PhoneAndroid,
+                        isSelected = selectedMethod == PaymentMethod.MBWAY,
+                        onClick = { selectedMethod = PaymentMethod.MBWAY },
+                        modifier = Modifier.weight(1f)
+                    )
+                    PaymentMethodSelector(
+                        title = "Cartão",
+                        icon = Icons.Default.CreditCard,
+                        isSelected = selectedMethod == PaymentMethod.CARD,
+                        onClick = { selectedMethod = PaymentMethod.CARD },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                AnimatedVisibility(visible = selectedMethod == PaymentMethod.MBWAY) {
+                    Column {
+                        OutlinedTextField(
+                            value = phoneNumber,
+                            onValueChange = { if (it.length <= 9) phoneNumber = it },
+                            label = { Text("Número de Telemóvel MB WAY") },
+                            placeholder = { Text("xxxxxxxxx") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            enabled = !isLoading,
+                            shape = RoundedCornerShape(14.dp)
+                        )
                     }
                 }
+
+                AnimatedVisibility(visible = selectedMethod == PaymentMethod.CARD) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    ) {
+                        Text(
+                            text = "O pagamento por cartão será processado em ambiente seguro.",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(16.dp),
+                            fontFamily = JakartaSans
+                        )
+                    }
+                }
+
+                if (stepMessage.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = stepMessage,
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = JakartaSans
+                    )
+                }
+            }
+
+            val isButtonEnabled = !isLoading && (selectedMethod == PaymentMethod.CARD || phoneNumber.length == 9)
+
+            Button(
+                enabled = isButtonEnabled,
+                onClick = {
+                    scope.launch {
+                        isLoading = true
+                        val user = supabase.auth.currentUserOrNull()
+
+                        if (user != null) {
+                            try {
+                                if (selectedMethod == PaymentMethod.MBWAY) {
+                                    stepMessage = "A enviar notificação para a App MB WAY..."
+                                    delay(1500)
+                                    stepMessage = "A aguardar confirmação..."
+                                    delay(1500)
+                                } else {
+                                    stepMessage = "A validar dados do cartão..."
+                                    delay(2000)
+                                }
+
+                                val valorDouble = amountCents
+
+                                val novoPagamento = mapOf(
+                                    "user_id" to user.id,
+                                    "valor" to valorDouble,
+                                    "metodo" to selectedMethod.name,
+                                    "estado" to "concluido"
+                                )
+                                supabase.from("pagamentos").insert(novoPagamento)
+
+
+                                val updateSessao = mapOf(
+                                    "hora_saida" to Instant.now().toString(),
+                                    "valor_pago" to valorDouble,
+                                    "estado" to "finalizada"
+                                )
+                                supabase.from("sessoes").update(updateSessao) {
+                                    filter {
+                                        eq("user_id", user.id)
+                                        eq("estado", "ativa")
+                                    }
+                                }
+
+                                Toast.makeText(context, "Pagamento concluído com sucesso!", Toast.LENGTH_LONG).show()
+
+                                navController.navigate("home") {
+                                    popUpTo("home") { inclusive = true }
+                                }
+
+                            } catch (e: Exception) {
+                                android.util.Log.e("PaymentError", "Erro ao processar", e)
+                                Toast.makeText(context, "Erro: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                            } finally {
+                                isLoading = false
+                                stepMessage = ""
+                            }
+                        } else {
+                            Toast.makeText(context, "Sessão expirada.", Toast.LENGTH_SHORT).show()
+                            isLoading = false
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                } else {
+                    Text(
+                        text = if (selectedMethod == PaymentMethod.MBWAY && phoneNumber.length < 9) "Insere o número MB WAY" else "Pagar ${valorEuros} €",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        fontFamily = JakartaSans
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PaymentMethodSelector(
+    title: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+    val bgColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface
+
+    Box(
+        modifier = modifier
+            .height(80.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(bgColor)
+            .border(2.dp, borderColor, RoundedCornerShape(16.dp))
+            .clickable { onClick() }
+            .padding(12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = title,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                fontFamily = JakartaSans
+            )
+            if (isSelected) {
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp)
+                )
             }
         }
     }
