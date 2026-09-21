@@ -1,12 +1,12 @@
 package com.parkin.app.ui
 
-import android.R.id.primary
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -30,10 +30,12 @@ import androidx.navigation.NavController
 import com.parkin.app.supabase
 import com.parkin.app.ui.theme.JakartaSans
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.Instant
+import java.util.Locale
 
 enum class PaymentMethod { MBWAY, CARD }
 
@@ -42,22 +44,21 @@ enum class PaymentMethod { MBWAY, CARD }
 fun PaymentScreen(
     navController: NavController,
     amountCents: Int
-
-
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
     val primary = MaterialTheme.colorScheme.primary
-    val background = MaterialTheme.colorScheme.background
-    val onSurface = MaterialTheme.colorScheme.onSurface
 
+
+    val valorEuros = remember(amountCents) {
+        String.format(Locale.getDefault(), "%.2f", amountCents / 100.0)
+    }
 
     var selectedMethod by remember { mutableStateOf(PaymentMethod.MBWAY) }
     var phoneNumber by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var stepMessage by remember { mutableStateOf("") }
-    var valorEuros = ""
 
     Scaffold(
         topBar = {
@@ -67,19 +68,19 @@ fun PaymentScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar",  tint = Color.White)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = primary),
-                    modifier = Modifier
-                        .height(70.dp)
-                        .clip(
-                            RoundedCornerShape(
-                                bottomStart = 14.dp,
-                                bottomEnd = 14.dp,
-                            )
+                modifier = Modifier
+                    .height(70.dp)
+                    .clip(
+                        RoundedCornerShape(
+                            bottomStart = 14.dp,
+                            bottomEnd = 14.dp,
                         )
-                )
+                    )
+            )
         }
     ) { innerPadding ->
         Column(
@@ -91,7 +92,6 @@ fun PaymentScreen(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
-
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -115,7 +115,7 @@ fun PaymentScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "${valorEuros} €",
+                            text = "$valorEuros €",
                             fontSize = 38.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.primary,
@@ -136,43 +136,14 @@ fun PaymentScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    PaymentMethodSelector(
-                        title = "MB WAY",
-                        icon = Icons.Default.PhoneAndroid,
-                        isSelected = selectedMethod == PaymentMethod.MBWAY,
-                        onClick = { selectedMethod = PaymentMethod.MBWAY },
-                        modifier = Modifier.weight(1f)
-                    )
-                    PaymentMethodSelector(
-                        title = "Cartão",
-                        icon = Icons.Default.CreditCard,
-                        isSelected = selectedMethod == PaymentMethod.CARD,
-                        onClick = { selectedMethod = PaymentMethod.CARD },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                AnimatedVisibility(visible = selectedMethod == PaymentMethod.MBWAY) {
-                    Column {
-                        OutlinedTextField(
-                            value = phoneNumber,
-                            onValueChange = { if (it.length <= 9) phoneNumber = it },
-                            label = { Text("Número de Telemóvel MB WAY") },
-                            placeholder = { Text("xxxxxxxxx") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            enabled = !isLoading,
-                            shape = RoundedCornerShape(14.dp)
-                        )
-                    }
                 }
 
                 AnimatedVisibility(visible = selectedMethod == PaymentMethod.CARD) {
@@ -214,21 +185,23 @@ fun PaymentScreen(
 
                         if (user != null) {
                             try {
-                                if (selectedMethod == PaymentMethod.MBWAY) {
-                                    stepMessage = "A enviar notificação para a App MB WAY..."
-                                    delay(1500)
-                                    stepMessage = "A aguardar confirmação..."
-                                    delay(1500)
-                                } else {
-                                    stepMessage = "A validar dados do cartão..."
-                                    delay(2000)
-                                }
+                                stepMessage = "A preparar pagamento seguro..."
 
-                                val valorDouble = amountCents
+                                supabase.functions.invoke(
+                                    function = "create-payment",
+                                    body = mapOf(
+                                        "amount" to amountCents,
+                                        "userId" to user.id
+                                    )
+                                )
+
+                                stepMessage = "A processar..."
+                                delay(1500)
+
 
                                 val novoPagamento = mapOf(
                                     "user_id" to user.id,
-                                    "valor" to valorDouble,
+                                    "valor" to amountCents,
                                     "metodo" to selectedMethod.name,
                                     "estado" to "concluido"
                                 )
@@ -237,7 +210,7 @@ fun PaymentScreen(
 
                                 val updateSessao = mapOf(
                                     "hora_saida" to Instant.now().toString(),
-                                    "valor_pago" to valorDouble,
+                                    "valor_pago" to amountCents,
                                     "estado" to "finalizada"
                                 )
                                 supabase.from("sessoes").update(updateSessao) {
@@ -278,7 +251,7 @@ fun PaymentScreen(
                     )
                 } else {
                     Text(
-                        text = if (selectedMethod == PaymentMethod.MBWAY && phoneNumber.length < 9) "Insere o número MB WAY" else "Pagar ${valorEuros} €",
+                        text = if (selectedMethod == PaymentMethod.MBWAY && phoneNumber.length < 9) "Insere o número MB WAY" else "Pagar $valorEuros €",
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
                         fontFamily = JakartaSans
@@ -336,6 +309,77 @@ fun PaymentMethodSelector(
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(16.dp)
                 )
+            }
+            @Composable
+            fun PaymentSuccessDialog(
+                valorEuros: String,
+                onDismiss: () -> Unit
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 6.dp
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(72.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = "Sucesso",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(40.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = "Pagamento Efetuado!",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontFamily = JakartaSans
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = "O valor de $valorEuros € foi processado com sucesso e a tua sessão foi encerrada.",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontFamily = JakartaSans,)
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Button(
+                            onClick = onDismiss,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text(
+                                text = "Voltar ao Início",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                fontFamily = JakartaSans
+                            )
+                        }
+                    }
+                }
             }
         }
     }

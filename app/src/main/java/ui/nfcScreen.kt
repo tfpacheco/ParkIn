@@ -9,6 +9,7 @@ import android.provider.Settings
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,11 +23,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.parkin.app.ui.theme.JakartaSans
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -146,13 +150,13 @@ fun NFCScreen(navController: NavController) {
                 modifier = Modifier
                     .height(60.dp)
                     .clip(
-                    RoundedCornerShape(
-                        topStart = 0.dp,
-                        topEnd = 0.dp,
-                        bottomStart = 14.dp,
-                        bottomEnd = 14.dp
+                        RoundedCornerShape(
+                            topStart = 0.dp,
+                            topEnd = 0.dp,
+                            bottomStart = 14.dp,
+                            bottomEnd = 14.dp
+                        )
                     )
-                )
             )
         }
     ) { innerPadding ->

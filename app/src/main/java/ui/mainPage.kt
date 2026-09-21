@@ -10,27 +10,24 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AdminPanelSettings
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Nfc
-import androidx.compose.material.icons.filled.Payment
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.parkin.app.supabase
 import com.parkin.app.ui.theme.JakartaSans
@@ -39,26 +36,39 @@ import io.github.jan.supabase.postgrest.from
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+
 @Serializable
 data class UserProfile(
     val id: String,
-    @SerialName("first_name") val firstName: String? = null,
-    @SerialName("last_name") val lastName: String? = null,
-    @SerialName("nfc_uid") val nfcUid: String? = null,
+
+    @SerialName("first_name")
+    val firstName: String? = null,
+
+    @SerialName("last_name")
+    val lastName: String? = null,
+
+    @SerialName("nfc_uid")
+    val nfcUid: String? = null,
+
     val role: String? = null
 )
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController) {
-    var nomeUsuario by remember { mutableStateOf("") }
-    var userRole: String? by remember { mutableStateOf("user") }
+fun HomeScreen(
+    navController: NavController
+) {
     val context = LocalContext.current
-    var nfcStatus by remember { mutableStateOf(getNfcStatus(context)) }
 
-    val primary = MaterialTheme.colorScheme.primary
-    val background = MaterialTheme.colorScheme.background
-    val onSurface = MaterialTheme.colorScheme.onSurface
+    var userRole by remember {
+        mutableStateOf("user")
+    }
+
+    var nfcStatus by remember {
+        mutableStateOf(getNfcStatus(context))
+    }
+
 
     DisposableEffect(context) {
         val receiver = object : BroadcastReceiver() {
@@ -66,34 +76,44 @@ fun HomeScreen(navController: NavController) {
                 nfcStatus = getNfcStatus(context)
             }
         }
+
         val filter = IntentFilter(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED)
         context.registerReceiver(receiver, filter)
-        onDispose { context.unregisterReceiver(receiver) }
+
+        onDispose {
+            context.unregisterReceiver(receiver)
+        }
     }
 
+
     val lifecycleOwner = LocalLifecycleOwner.current
+
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 nfcStatus = getNfcStatus(context)
             }
         }
+
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     val user = supabase.auth.currentUserOrNull()
 
     LaunchedEffect(user) {
         if (user != null) {
-            val firstName = user.userMetadata?.get("first_name")?.toString()?.replace("\"", "") ?: ""
-            val lastName = user.userMetadata?.get("last_name")?.toString()?.replace("\"", "") ?: ""
-            nomeUsuario = "$firstName $lastName".trim()
-
             try {
-                val profile = supabase.from("users")
-                    .select { filter { eq("id", user.id) } }
+                val profile = supabase
+                    .from("users")
+                    .select {
+                        filter { eq("id", user.id) }
+                    }
                     .decodeSingleOrNull<UserProfile>()
+
                 userRole = profile?.role ?: "user"
             } catch (e: Exception) {
                 android.util.Log.e("HomeScreen", "Erro ao carregar perfil", e)
@@ -102,16 +122,35 @@ fun HomeScreen(navController: NavController) {
         }
     }
 
+
+
     if (nfcStatus == NfcStatus.DISABLED) {
         AlertDialog(
-            onDismissRequest = { },
-            title = { Text("NFC desativado") },
-            text = { Text("Para usar o ParkIn, ativa o NFC nas definições do telemóvel.") },
+            onDismissRequest = {},
+            title = {
+                Text(
+                    text = "NFC desativado",
+                    fontFamily = JakartaSans,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Para usar o ParkIn, ativa o NFC nas definições do telemóvel.",
+                    fontFamily = JakartaSans
+                )
+            },
             confirmButton = {
-                Button(onClick = {
-                    context.startActivity(Intent(Settings.ACTION_NFC_SETTINGS))
-                }) {
-                    Text("Abrir definições")
+                Button(
+                    onClick = {
+                        context.startActivity(Intent(Settings.ACTION_NFC_SETTINGS))
+                    }
+                ) {
+                    Text(
+                        text = "Abrir definições",
+                        fontFamily = JakartaSans,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         )
@@ -119,82 +158,66 @@ fun HomeScreen(navController: NavController) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Box(
-                            modifier = Modifier
-                                .size(34.dp)
-                                .clip(RoundedCornerShape(9.dp))
-                                .background(Color(0xFFFFFFFF)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "P",
-                                color = Color(0xFF2563EB),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 20.sp
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = "ParkIn",
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            fontSize = 20.sp
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = primary),
-                modifier = Modifier
-                    .height(70.dp)
-                    .clip(
-                        RoundedCornerShape(
-                            bottomStart = 14.dp,
-                            bottomEnd = 14.dp,
-                        )
-                    )
-            )
-        }
+            ParkInTopAppBar()
+        },
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(background)
-                .padding(20.dp)
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            ActiveSessionCard(navController = navController, amountCents = 250)
-
-            Spacer(modifier = Modifier.height(30.dp))
-
-            Text(
-                text = "Acesso rápido",
-                fontFamily = JakartaSans,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                color = onSurface,
-                modifier = Modifier.padding(bottom = 15.dp)
+            ActiveSessionCard(
+                navController = navController,
+                amountCents = 250,
+                hasActiveSession = false
             )
 
-            Column(verticalArrangement = Arrangement.spacedBy(15.dp)) {
+            Spacer(modifier = Modifier.height(24.dp))
+
+
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Acesso rápido",
+                    fontFamily = JakartaSans,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(15.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     ShortcutCard(
                         title = "Entrar/Sair",
-                        icon = Icons.Default.Nfc,
-                        color = primary,
+                        subtitle = null,
+                        icon = Icons.Default.DirectionsCar,
+                        color = MaterialTheme.colorScheme.primary,
                         onClick = { navController.navigate("nfc") },
                         modifier = Modifier.weight(1f)
                     )
+
                     ShortcutCard(
                         title = "Histórico",
+                        subtitle = null,
                         icon = Icons.Default.History,
-                        color = primary,
+                        color = MaterialTheme.colorScheme.primary,
                         onClick = { navController.navigate("history") },
                         modifier = Modifier.weight(1f)
                     )
@@ -206,15 +229,18 @@ fun HomeScreen(navController: NavController) {
                 ) {
                     ShortcutCard(
                         title = "Pagamentos",
-                        icon = Icons.Default.Payment,
-                        color = primary,
-                        onClick = { navController.navigate("payment/250") }, // Passa o valor 250 cêntimos
+                        subtitle = null,
+                        icon = Icons.Default.CreditCard,
+                        color = MaterialTheme.colorScheme.primary,
+                        onClick = { navController.navigate("payment/250") },
                         modifier = Modifier.weight(1f)
                     )
+
                     ShortcutCard(
                         title = "Perfil",
+                        subtitle = null,
                         icon = Icons.Default.Person,
-                        color = primary,
+                        color = MaterialTheme.colorScheme.primary,
                         onClick = { navController.navigate("profile") },
                         modifier = Modifier.weight(1f)
                     )
@@ -223,8 +249,9 @@ fun HomeScreen(navController: NavController) {
                 if (userRole == "admin") {
                     ShortcutCard(
                         title = "Painel Admin",
+                        subtitle = null,
                         icon = Icons.Default.AdminPanelSettings,
-                        color = primary,
+                        color = MaterialTheme.colorScheme.primary,
                         onClick = { navController.navigate("admin_panel") },
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -234,88 +261,184 @@ fun HomeScreen(navController: NavController) {
     }
 }
 
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ShortcutCard(
-    title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    color: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .height(120.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(20.dp))
-            .clickable { onClick() }
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = color,
-                modifier = Modifier.size(32.dp)
+fun ParkInTopAppBar() {
+    val primary = MaterialTheme.colorScheme.primary
+
+    TopAppBar(
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color.White),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "P",
+                        color = Color(0xFF2563EB),
+                        fontFamily = JakartaSans,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 21.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Text(
+                    text = "ParkIn",
+                    fontFamily = JakartaSans,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                    color = Color.White
+                )
+            }
+        },
+        actions = {},
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = primary,
+            titleContentColor = Color.White
+        ),
+        modifier = Modifier
+            .height(64.dp)
+            .clip(
+                RoundedCornerShape(
+                    bottomStart = 18.dp,
+                    bottomEnd = 18.dp
+                )
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = title,
-                fontFamily = JakartaSans,
-                fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-    }
+    )
 }
 
+
 @Composable
-fun ActiveSessionCard(navController: NavController, amountCents: Int) {
+fun ActiveSessionCard(
+    navController: NavController,
+    amountCents: Int,
+    hasActiveSession: Boolean
+) {
+    val primary = MaterialTheme.colorScheme.primary
+    val surface = MaterialTheme.colorScheme.surface
+    val onSurface = MaterialTheme.colorScheme.onSurface
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(22.dp))
+            .background(surface)
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
+                shape = RoundedCornerShape(22.dp)
+            )
             .padding(20.dp)
     ) {
-        Column {
-            Text(
-                text = "Sessão Ativa",
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-                fontFamily = JakartaSans,
-                fontSize = 16.sp
-            )
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            if (hasActiveSession) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(9.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF22C55E))
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Estacionamento ativo",
+                        fontFamily = JakartaSans,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = onSurface
+                    )
+                }
 
-            Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                SessionInfoItem("Entrada", "--:--")
-                SessionInfoItem("Duração", "0m")
-                SessionInfoItem("Valor", "0,00€")
-            }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    SessionInfoItem(label = "Entrada", value = "21:42")
+                    SessionInfoItem(label = "Duração", value = "38 min")
+                    SessionInfoItem(label = "Valor", value = "1,20 €")
+                }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
-            Button(
-                onClick = { navController.navigate("payment/$amountCents") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
+                Button(
+                    onClick = { navController.navigate("payment/$amountCents") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = primary)
+                ) {
+                    Text(
+                        text = "Pagar e sair",
+                        fontFamily = JakartaSans,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            } else {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(9.dp)
+                            .clip(CircleShape)
+                            .background(onSurface.copy(alpha = 0.25f))
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Nenhuma sessão ativa",
+                        fontFamily = JakartaSans,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = onSurface
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
                 Text(
-                    text = "Pagar e sair",
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimary
+                    text = "Ainda não estás estacionado.",
+                    fontFamily = JakartaSans,
+                    fontSize = 12.sp,
+                    color = onSurface.copy(alpha = 0.50f)
                 )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = { navController.navigate("nfc") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = primary)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DirectionsCar,
+                        contentDescription = null,
+                        modifier = Modifier.size(19.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Entrar / Estacionar",
+                        fontFamily = JakartaSans,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }
@@ -324,11 +447,102 @@ fun ActiveSessionCard(navController: NavController, amountCents: Int) {
 @Composable
 fun SessionInfoItem(
     label: String,
-    value: String,
-    valueColor: Color = MaterialTheme.colorScheme.onSurface
+    value: String
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = label, color = MaterialTheme.colorScheme.secondary, fontSize = 11.sp)
-        Text(text = value, color = valueColor, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = label,
+            fontFamily = JakartaSans,
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.secondary
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = value,
+            fontFamily = JakartaSans,
+            fontWeight = FontWeight.Bold,
+            fontSize = 15.sp
+        )
+    }
+}
+
+
+@Composable
+fun ShortcutCard(
+    title: String,
+    subtitle: String?,
+    icon: ImageVector,
+    color: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val surface = MaterialTheme.colorScheme.surface
+    val onSurface = MaterialTheme.colorScheme.onSurface
+
+    Box(
+        modifier = modifier
+            .height(105.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(surface)
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
+                shape = RoundedCornerShape(20.dp)
+            )
+            .clickable { onClick() }
+            .padding(14.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(color.copy(alpha = 0.09f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = title,
+                        tint = color,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = onSurface.copy(alpha = 0.3f),
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            Column {
+                Text(
+                    text = title,
+                    fontFamily = JakartaSans,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = onSurface
+                )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        fontFamily = JakartaSans,
+                        fontSize = 10.sp,
+                        color = onSurface.copy(alpha = 0.50f)
+                    )
+                }
+            }
+        }
     }
 }

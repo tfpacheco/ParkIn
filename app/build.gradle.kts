@@ -76,5 +76,6 @@ dependencies {
     implementation("com.stripe:stripe-android:20.35.0")
     implementation("com.stripe:stripe-android:20.48.0")
     implementation("com.stripe:stripe-android:20.38.0")
+    implementation("io.github.jan-tennert.supabase:functions-kt")
 
 }
