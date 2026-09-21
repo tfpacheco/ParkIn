@@ -109,12 +109,11 @@ fun AppNavigation(
             route = "payment/{amount}",
             arguments = listOf(navArgument("amount") { type = NavType.IntType })
         ) { backStackEntry ->
-
             val amount = backStackEntry.arguments?.getInt("amount") ?: 0
             PaymentScreen(
                 navController = navController,
                 amountCents = amount
             )
         }
-        }
     }
+}
