@@ -232,7 +232,7 @@ fun HomeScreen(
                         subtitle = null,
                         icon = Icons.Default.CreditCard,
                         color = MaterialTheme.colorScheme.primary,
-                        onClick = { navController.navigate("payment/250") },
+                        onClick = { navController.navigate("payment") },
                         modifier = Modifier.weight(1f)
                     )
 
@@ -375,7 +375,10 @@ fun ActiveSessionCard(
                 Spacer(modifier = Modifier.height(18.dp))
 
                 Button(
-                    onClick = { navController.navigate("payment/$amountCents") },
+                    onClick = {
+                        val precoEmCentimos = 250
+                        navController.navigate("payment")
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),

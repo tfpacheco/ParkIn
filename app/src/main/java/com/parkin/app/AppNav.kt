@@ -11,11 +11,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.parkin.app.ui.HomeScreen
 import com.parkin.app.ui.LoginScreen
 import com.parkin.app.ui.NFCScreen
@@ -105,14 +103,9 @@ fun AppNavigation(
             )
         }
 
-        composable(
-            route = "payment/{amount}",
-            arguments = listOf(navArgument("amount") { type = NavType.IntType })
-        ) { backStackEntry ->
-            val amount = backStackEntry.arguments?.getInt("amount") ?: 0
+        composable("payment") {
             PaymentScreen(
-                navController = navController,
-                amountCents = amount
+                navController = navController
             )
         }
     }

@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.commonizer.OptimisticNumberCommonizationEnabledKey.alias
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -78,4 +80,5 @@ dependencies {
     implementation("com.stripe:stripe-android:20.38.0")
     implementation("io.github.jan-tennert.supabase:functions-kt")
     implementation("com.stripe:stripe-android:20.35.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 }

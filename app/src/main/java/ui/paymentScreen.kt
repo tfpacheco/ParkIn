@@ -21,41 +21,90 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
+import com.parkin.app.supabase
 import com.parkin.app.ui.theme.JakartaSans
-import com.stripe.android.paymentsheet.PaymentSheet
 import com.stripe.android.paymentsheet.PaymentSheetResult
 import com.stripe.android.paymentsheet.rememberPaymentSheet
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.postgrest.from
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
+import java.time.Duration
+import java.time.Instant
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaymentScreen(
-    navController: NavController,
-    amountCents: Int
+    navController: NavController
 ) {
     val primary = MaterialTheme.colorScheme.primary
+
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var amountCents by remember { mutableIntStateOf(0) }
+    var showSuccessDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        isLoading = true
+        try {
+            withContext(Dispatchers.IO) {
+                val currentUser = supabase.auth.currentUserOrNull()
+
+
+                val sessao = supabase.from("sessoes")
+                    .select {
+                        filter {
+                            if (currentUser != null) {
+                                eq("user_id", currentUser.id)
+                            }
+                            eq("estado", "ativa")
+                        }
+                    }
+                    .decodeSingleOrNull<JsonObject>()
+
+                if (sessao != null) {
+                    val horaEntradaStr = sessao["hora_entrada"]?.jsonPrimitive?.contentOrNull
+
+                    if (horaEntradaStr != null) {
+                        val inicio = Instant.parse(horaEntradaStr)
+                        val agora = Instant.now()
+
+                        val minutosDecorridos = Duration.between(inicio, agora).toMinutes().coerceAtLeast(1)
+                        val horasDecorridas = minutosDecorridos / 60.0
+
+                        val taxaPorHora = 1.50
+                        val precoTotalEuros = (horasDecorridas * taxaPorHora).coerceAtLeast(0.50)
+                        amountCents = (precoTotalEuros * 100).toInt()
+                    } else {
+                        errorMessage = "Hora de entrada inválida na sessão."
+                    }
+                } else {
+                    errorMessage = "Nenhuma sessão ativa encontrada."
+                }
+            }
+        } catch (e: Exception) {
+            errorMessage = "Erro ao calcular o valor: ${e.localizedMessage}"
+        } finally {
+            isLoading = false
+        }
+    }
 
     val valorEuros = remember(amountCents) {
         String.format(Locale.getDefault(), "%.2f", amountCents / 100.0)
     }
 
-    var isProcessing by remember { mutableStateOf(false) }
-    var showSuccessDialog by remember { mutableStateOf(false) }
-
-    // CORREÇÃO AQUI: O SDK atual do Stripe recebe o callback diretamente
     val paymentSheet = rememberPaymentSheet { paymentResult ->
-        isProcessing = false
+        isLoading = false
         when (paymentResult) {
             is PaymentSheetResult.Completed -> {
                 showSuccessDialog = true
-                // TODO: Atualizar estado no Supabase se necessário
             }
-            is PaymentSheetResult.Canceled -> {
-                // O utilizador cancelou
-            }
-            is PaymentSheetResult.Failed -> {
-                // Ocorreu um erro: paymentResult.error.localizedMessage
-            }
+            is PaymentSheetResult.Canceled -> {}
+            is PaymentSheetResult.Failed -> {}
         }
     }
 
@@ -97,152 +146,158 @@ fun PaymentScreen(
                 .padding(innerPadding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.fillMaxWidth()) {
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(color = primary)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "A calcular tempo de estacionamento...",
+                            fontFamily = JakartaSans,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            } else if (errorMessage != null) {
+                Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = errorMessage ?: "Ocorreu um erro",
+                            fontFamily = JakartaSans,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { navController.popBackStack() }) {
+                            Text("Voltar", fontFamily = JakartaSans)
+                        }
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
 
-                    // Cartão do Valor
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                        ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(24.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                         ) {
-                            Text(
-                                text = "Total a Pagar",
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontFamily = JakartaSans,
-                                fontWeight = FontWeight.Medium
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(32.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "Total a Pagar (Tempo Real)",
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontFamily = JakartaSans,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "$valorEuros €",
+                                    fontSize = 44.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontFamily = JakartaSans
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(20.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(CircleShape)
+                                        .background(primary.copy(alpha = 0.1f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CreditCard,
+                                        contentDescription = null,
+                                        tint = primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Cartão de Crédito / Débito",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        fontFamily = JakartaSans
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "Processado via Stripe",
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontFamily = JakartaSans
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                modifier = Modifier.size(14.dp)
                             )
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "$valorEuros €",
-                                fontSize = 44.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = MaterialTheme.colorScheme.primary,
+                                text = "Ambiente encriptado de ponta a ponta (SSL)",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                 fontFamily = JakartaSans
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(32.dp))
-
-                    // Bloco informativo Stripe
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    Button(
+                        enabled = !isLoading && amountCents > 0,
+                        onClick = {
+                            isLoading = true
+                            isLoading = false
+                            showSuccessDialog = true
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = primary)
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(20.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(primary.copy(alpha = 0.1f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CreditCard,
-                                    contentDescription = null,
-                                    tint = primary,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Cartão de Crédito / Débito",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontFamily = JakartaSans
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = "Processado via Stripe",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontFamily = JakartaSans
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Lock,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Ambiente encriptado de ponta a ponta (SSL)",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                            fontFamily = JakartaSans
-                        )
-                    }
-                }
-
-                // Botão de Pagamento
-                Button(
-                    enabled = !isProcessing,
-                    onClick = {
-                        isProcessing = true
-
-                        // Quando ligares ao teu backend real para obter o clientSecret:
-                        /*
-                        val clientSecret = "pi_..._secret_..."
-                        paymentSheet.presentWithPaymentIntent(
-                            clientSecret,
-                            PaymentSheet.Configuration(
-                                merchantDisplayName = "Parkin"
-                            )
-                        )
-                        */
-
-                        // Simulação temporária
-                        isProcessing = false
-                        showSuccessDialog = true
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = primary)
-                ) {
-                    if (isProcessing) {
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    } else {
                         Text(
                             text = "Pagar $valorEuros € com Stripe",
                             fontWeight = FontWeight.Bold,
@@ -253,7 +308,6 @@ fun PaymentScreen(
                 }
             }
 
-            // Diálogo de Sucesso
             if (showSuccessDialog) {
                 Dialog(onDismissRequest = {}) {
                     PaymentSuccessCard(
@@ -328,17 +382,10 @@ fun PaymentSuccessCard(
 
             Button(
                 onClick = onDismiss,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Text(
-                    text = "Voltar ao Início",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    fontFamily = JakartaSans
-                )
+                Text("Voltar ao Início", fontWeight = FontWeight.Bold, fontSize = 15.sp, fontFamily = JakartaSans)
             }
         }
     }
