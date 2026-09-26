@@ -1,4 +1,4 @@
-package ui
+package com.parkin.app.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

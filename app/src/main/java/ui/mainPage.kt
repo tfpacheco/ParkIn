@@ -227,12 +227,15 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+
                     ShortcutCard(
                         title = "Pagamentos",
                         subtitle = null,
                         icon = Icons.Default.CreditCard,
                         color = MaterialTheme.colorScheme.primary,
-                        onClick = { navController.navigate("payment") },
+                        onClick = {
+                            navController.navigate("payment")
+                        },
                         modifier = Modifier.weight(1f)
                     )
 
@@ -241,25 +244,54 @@ fun HomeScreen(
                         subtitle = null,
                         icon = Icons.Default.Person,
                         color = MaterialTheme.colorScheme.primary,
-                        onClick = { navController.navigate("profile") },
+                        onClick = {
+                            navController.navigate("profile")
+                        },
                         modifier = Modifier.weight(1f)
                     )
                 }
 
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    ShortcutCard(
+                        title = "Parques",
+                        subtitle = null,
+                        icon = Icons.Default.LocalParking,
+                        color = MaterialTheme.colorScheme.primary,
+                        onClick = {
+                            navController.navigate("parks")
+
+                        },
+                        modifier = Modifier.width(160.dp)
+                    )
+                }
+
+                Spacer(
+                    modifier = Modifier.height(10.dp)
+                )
                 if (userRole == "admin") {
+
                     ShortcutCard(
                         title = "Painel Admin",
                         subtitle = null,
                         icon = Icons.Default.AdminPanelSettings,
                         color = MaterialTheme.colorScheme.primary,
-                        onClick = { navController.navigate("admin_panel") },
+                        onClick = {
+                            navController.navigate("admin_panel")
+                        },
                         modifier = Modifier.fillMaxWidth()
                     )
+                }
                 }
             }
         }
     }
-}
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)

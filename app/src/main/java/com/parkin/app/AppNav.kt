@@ -17,10 +17,11 @@ import androidx.navigation.compose.rememberNavController
 import com.parkin.app.ui.HomeScreen
 import com.parkin.app.ui.LoginScreen
 import com.parkin.app.ui.NFCScreen
+import com.parkin.app.ui.ParksScreen
 import com.parkin.app.ui.PaymentScreen
 import com.parkin.app.ui.ProfileScreen
+import com.parkin.app.ui.RegisterScreen
 import io.github.jan.supabase.auth.auth
-import ui.RegisterScreen
 
 @Composable
 fun AppNavigation(
@@ -105,6 +106,12 @@ fun AppNavigation(
 
         composable("payment") {
             PaymentScreen(
+                navController = navController
+            )
+        }
+
+        composable("parks") {
+            ParksScreen(
                 navController = navController
             )
         }
