@@ -17,6 +17,7 @@ import androidx.navigation.compose.rememberNavController
 import com.parkin.app.ui.HomeScreen
 import com.parkin.app.ui.LoginScreen
 import com.parkin.app.ui.NFCScreen
+import com.parkin.app.ui.ParkDetailsScreen
 import com.parkin.app.ui.ParksScreen
 import com.parkin.app.ui.PaymentScreen
 import com.parkin.app.ui.ProfileScreen
@@ -115,5 +116,19 @@ fun AppNavigation(
                 navController = navController
             )
         }
+
+        composable("parks") {
+            ParksScreen(
+                navController = navController
+            )
+        }
+        composable("park/{parkId}") { backStackEntry ->
+            val parkId = backStackEntry.arguments?.getString("parkId") ?: ""
+
+            ParkDetailsScreen(
+                navController = navController,
+                parkId = parkId
+            )
+        }
+        }
     }
-}

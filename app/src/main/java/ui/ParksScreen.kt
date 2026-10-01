@@ -218,7 +218,7 @@ fun ParksScreen(navController: NavController) {
                         ParkCard(
                             park = park,
                             onClick = {
-                                navController.navigate("parks")
+                                navController.navigate("park/${park.id}")
                             }
                         )
                     }
