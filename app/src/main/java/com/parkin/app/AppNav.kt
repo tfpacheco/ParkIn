@@ -130,5 +130,5 @@ fun AppNavigation(
                 parkId = parkId
             )
         }
-        }
     }
+}

@@ -453,31 +453,11 @@ fun ActiveSessionCard(
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
-
-                Button(
-                    onClick = { navController.navigate("nfc") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = primary)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.DirectionsCar,
-                        contentDescription = null,
-                        modifier = Modifier.size(19.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Entrar / Estacionar",
-                        fontFamily = JakartaSans,
-                        fontWeight = FontWeight.Bold
-                    )
                 }
             }
         }
     }
-}
+
 
 @Composable
 fun SessionInfoItem(
