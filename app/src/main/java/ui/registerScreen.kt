@@ -44,7 +44,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.parkin.app.R
-import com.parkin.app.supabase
+import com.parkin.app.data.supabase
 import com.parkin.app.ui.theme.BorderGray
 import com.parkin.app.ui.theme.JakartaSans
 import com.parkin.app.ui.theme.LightBg

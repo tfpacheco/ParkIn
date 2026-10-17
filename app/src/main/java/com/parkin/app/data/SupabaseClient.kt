@@ -1,4 +1,4 @@
-package com.parkin.app
+package com.parkin.app.data
 
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.auth.Auth
@@ -6,8 +6,8 @@ import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
 
 val supabase = createSupabaseClient(
-    supabaseUrl = "",
-    supabaseKey = ""
+    supabaseUrl = "https://ryinmsikczlkzgpytbum.supabase.co",
+    supabaseKey = "sb_publishable_6wzx63ok5EPU5N3_8Pn6VA_wESzy1kV"
 ) {
     install(Postgrest)
     install(Auth)
