@@ -118,11 +118,11 @@ fun ProfileScreen(
                     containerColor = Color(0xFF4169E1)
                 ),
                 modifier = Modifier
-                    .height(70.dp)
+                    .height(64.dp)
                     .clip(
                         RoundedCornerShape(
-                            bottomStart = 14.dp,
-                            bottomEnd = 14.dp
+                            bottomStart = 18.dp,
+                            bottomEnd = 18.dp
                         )
                     )
             )

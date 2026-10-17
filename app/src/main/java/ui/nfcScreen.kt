@@ -148,13 +148,11 @@ fun NFCScreen(navController: NavController) {
                     containerColor = primary
                 ),
                 modifier = Modifier
-                    .height(60.dp)
+                    .height(64.dp)
                     .clip(
                         RoundedCornerShape(
-                            topStart = 0.dp,
-                            topEnd = 0.dp,
-                            bottomStart = 14.dp,
-                            bottomEnd = 14.dp
+                            bottomStart = 18.dp,
+                            bottomEnd = 18.dp
                         )
                     )
             )
