@@ -1,6 +1,6 @@
 # 🅿️ ParkIn
 
-**ParkIn** is a smart, ticketless parking management system that replaces physical tickets and payment terminals with an all-in-one Android application.
+**ParkIn** is a smart, ticketless parking management system that serves as an alternative to physical tickets and payment terminals with an all-in-one Android application.
 
 ## 🚀 Key Features
 
