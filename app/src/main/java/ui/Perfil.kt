@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Notifications
@@ -69,6 +70,7 @@ fun ProfileScreen(
     val scope = rememberCoroutineScope()
 
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var showDeleteAccDialog by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var mensagem by remember { mutableStateOf("") }
 
@@ -198,7 +200,7 @@ fun ProfileScreen(
                     )
                     .padding(vertical = 6.dp)
             ) {
-                // 1. MODO ESCURO (PRIMEIRA OPÇÃO)
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -232,36 +234,40 @@ fun ProfileScreen(
                     )
                 }
 
-                // 2. OS MEUS VEÍCULOS
                 ProfileMenuOption(
                     icon = Icons.Default.DirectionsCar,
                     title = "Os meus veículos",
                     onClick = {
-                        navController.navigate("cars/1")
+                        navController.navigate("cars_list")
                     }
                 )
 
-                // 3. NOTIFICAÇÕES
                 ProfileMenuOption(
                     icon = Icons.Default.Notifications,
                     title = "Notificações",
                     onClick = { }
                 )
 
-                // 4. HISTÓRICO DE ESTACIONAMENTOS
                 ProfileMenuOption(
                     icon = Icons.Default.History,
-                    title = "Histórico de estacionamentos",
+                    title = "Histórico",
                     onClick = { navController.navigate("historical") }
                 )
 
-                // 5. TERMINAR SESSÃO
                 ProfileMenuOption(
                     icon = Icons.AutoMirrored.Filled.ExitToApp,
                     title = "Terminar sessão",
                     tint = Color(0xFFD32F2F),
                     textColor = Color(0xFFD32F2F),
                     onClick = { if (!isLoading) showLogoutDialog = true }
+                )
+
+                ProfileMenuOption(
+                    icon = Icons.Default.Delete,
+                    title = "Eliminar conta",
+                    tint = Color(0xFFD32F2F),
+                    textColor = Color(0xFFD32F2F),
+                    onClick = { if (!isLoading) showDeleteAccDialog = true }
                 )
             }
 
@@ -277,6 +283,7 @@ fun ProfileScreen(
         }
     }
 
+    // Diálogo de Terminar Sessão
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = {
@@ -343,6 +350,81 @@ fun ProfileScreen(
             dismissButton = {
                 TextButton(
                     onClick = { showLogoutDialog = false },
+                    enabled = !isLoading
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    // Diálogo de Eliminar Conta
+    if (showDeleteAccDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                if (!isLoading) showDeleteAccDialog = false
+            },
+            title = {
+                Text(
+                    text = "Eliminar a conta",
+                    fontFamily = JakartaSans,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Tens a certeza de que queres eliminar permanentemente a tua conta? Esta ação não pode ser desfeita.",
+                    fontFamily = JakartaSans
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !isLoading,
+                    onClick = {
+                        scope.launch {
+                            isLoading = true
+                            mensagem = ""
+
+                            try {
+                                supabase.auth.signOut()
+
+                                val preferences =
+                                    navController.context.getSharedPreferences(
+                                        "preferences",
+                                        Context.MODE_PRIVATE
+                                    )
+
+                                preferences.edit()
+                                    .remove("is_logged_in")
+                                    .remove("user_email")
+                                    .apply()
+
+                                showDeleteAccDialog = false
+
+                                navController.navigate("login") {
+                                    popUpTo(0) {
+                                        inclusive = true
+                                    }
+                                    launchSingleTop = true
+                                }
+                            } catch (e: Exception) {
+                                mensagem =
+                                    "Não foi possível eliminar a conta. Tenta novamente."
+                            } finally {
+                                isLoading = false
+                            }
+                        }
+                    }
+                ) {
+                    Text(
+                        text = if (isLoading) "A eliminar..." else "Eliminar conta",
+                        color = Color(0xFFD32F2F)
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteAccDialog = false },
                     enabled = !isLoading
                 ) {
                     Text("Cancelar")

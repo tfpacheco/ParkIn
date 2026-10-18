@@ -14,8 +14,10 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.parkin.app.data.Vehicle
 import com.parkin.app.data.supabase
-import com.parkin.app.ui.CarsDetailsScreen
+import com.parkin.app.ui.AddVehicleScreen
+import com.parkin.app.ui.CarsListScreen
 import com.parkin.app.ui.HomeScreen
 import com.parkin.app.ui.LoginScreen
 import com.parkin.app.ui.NFCScreen
@@ -25,6 +27,7 @@ import com.parkin.app.ui.PaymentScreen
 import com.parkin.app.ui.ProfileScreen
 import com.parkin.app.ui.RegisterScreen
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.postgrest.from
 
 @Composable
 fun AppNavigation(
@@ -42,6 +45,7 @@ fun AppNavigation(
         val session = supabase.auth.currentSessionOrNull()
 
         startDestination = if (session != null) {
+
             "home"
         } else {
             "login"
@@ -65,7 +69,7 @@ fun AppNavigation(
         composable("login") {
             LoginScreen(
                 onNavigateToHome = {
-                    navController.navigate("home") {
+                    navController.navigate("cars_list") {
                         popUpTo("login") { inclusive = true }
                     }
                 },
@@ -128,13 +132,12 @@ fun AppNavigation(
             )
         }
 
-        composable("cars/{vehicleId}") { backStackEntry ->
-            val vehicleId = backStackEntry.arguments?.getString("vehicleId") ?: ""
+        composable("cars_list") {
+            CarsListScreen(navController = navController)
+        }
 
-            CarsDetailsScreen(
-                navController = navController,
-                vehicleId = vehicleId
-            )
+        composable("add_vehicle") {
+            AddVehicleScreen(navController = navController)
         }
     }
 }
