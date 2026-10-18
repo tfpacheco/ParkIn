@@ -15,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.parkin.app.data.supabase
+import com.parkin.app.ui.CarsDetailsScreen
 import com.parkin.app.ui.HomeScreen
 import com.parkin.app.ui.LoginScreen
 import com.parkin.app.ui.NFCScreen
@@ -118,17 +119,21 @@ fun AppNavigation(
             )
         }
 
-        composable("parks") {
-            ParksScreen(
-                navController = navController
-            )
-        }
         composable("park/{parkId}") { backStackEntry ->
             val parkId = backStackEntry.arguments?.getString("parkId") ?: ""
 
             ParkDetailsScreen(
                 navController = navController,
                 parkId = parkId
+            )
+        }
+
+        composable("cars/{vehicleId}") { backStackEntry ->
+            val vehicleId = backStackEntry.arguments?.getString("vehicleId") ?: ""
+
+            CarsDetailsScreen(
+                navController = navController,
+                vehicleId = vehicleId
             )
         }
     }

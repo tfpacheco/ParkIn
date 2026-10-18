@@ -1,8 +1,8 @@
-
 package com.parkin.app.ui
 
 import android.content.Context
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,11 +18,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,6 +65,7 @@ fun ProfileScreen(
 ) {
     val onSurface = MaterialTheme.colorScheme.onSurface
     val onPrimary = MaterialTheme.colorScheme.onPrimary
+
     val scope = rememberCoroutineScope()
 
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -173,72 +178,90 @@ fun ProfileScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(30.dp))
 
             Text(
-                text = "Preferências",
+                text = "Opções da Conta",
                 fontFamily = JakartaSans,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
                 color = onSurface,
-                modifier = Modifier.padding(bottom = 15.dp)
+                modifier = Modifier.padding(bottom = 10.dp)
             )
 
-            Spacer(modifier = Modifier.height(5.dp))
-
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
                         color = MaterialTheme.colorScheme.surface,
                         shape = RoundedCornerShape(20.dp)
                     )
-                    .padding(10.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(vertical = 6.dp)
             ) {
+                // 1. MODO ESCURO (PRIMEIRA OPÇÃO)
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.DarkMode,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DarkMode,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
 
-                    Text(
-                        text = "Modo escuro",
-                        fontFamily = JakartaSans,
-                        color = MaterialTheme.colorScheme.onSurface
+                        Text(
+                            text = "Modo escuro",
+                            fontFamily = JakartaSans,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    Switch(
+                        checked = isDarkTheme,
+                        onCheckedChange = onThemeChange
                     )
                 }
 
-                Switch(
-                    checked = isDarkTheme,
-                    onCheckedChange = onThemeChange
+                // 2. OS MEUS VEÍCULOS
+                ProfileMenuOption(
+                    icon = Icons.Default.DirectionsCar,
+                    title = "Os meus veículos",
+                    onClick = {
+                        navController.navigate("cars/1")
+                    }
                 )
-            }
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-
-            Button(
-                onClick = { showLogoutDialog = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                enabled = !isLoading,
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFD32F2F)
+                // 3. NOTIFICAÇÕES
+                ProfileMenuOption(
+                    icon = Icons.Default.Notifications,
+                    title = "Notificações",
+                    onClick = { }
                 )
-            ) {
-                Text(
-                    text = "Terminar sessão",
-                    fontFamily = JakartaSans,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
+
+                // 4. HISTÓRICO DE ESTACIONAMENTOS
+                ProfileMenuOption(
+                    icon = Icons.Default.History,
+                    title = "Histórico de estacionamentos",
+                    onClick = { navController.navigate("historical") }
+                )
+
+                // 5. TERMINAR SESSÃO
+                ProfileMenuOption(
+                    icon = Icons.AutoMirrored.Filled.ExitToApp,
+                    title = "Terminar sessão",
+                    tint = Color(0xFFD32F2F),
+                    textColor = Color(0xFFD32F2F),
+                    onClick = { if (!isLoading) showLogoutDialog = true }
                 )
             }
 
@@ -247,13 +270,12 @@ fun ProfileScreen(
 
                 Text(
                     text = mensagem,
-                    color = Color.Red,
+                    color = Color(0xFFD32F2F),
                     fontSize = 13.sp
                 )
             }
         }
     }
-
 
     if (showLogoutDialog) {
         AlertDialog(
@@ -297,7 +319,6 @@ fun ProfileScreen(
 
                                 showLogoutDialog = false
 
-
                                 navController.navigate("login") {
                                     popUpTo(0) {
                                         inclusive = true
@@ -327,6 +348,51 @@ fun ProfileScreen(
                     Text("Cancelar")
                 }
             }
+        )
+    }
+}
+
+@Composable
+fun ProfileMenuOption(
+    icon: ImageVector,
+    title: String,
+    tint: Color = MaterialTheme.colorScheme.primary,
+    textColor: Color = MaterialTheme.colorScheme.onSurface,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size(22.dp)
+            )
+
+            Text(
+                text = title,
+                fontFamily = JakartaSans,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = textColor
+            )
+        }
+
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = textColor.copy(alpha = 0.5f),
+            modifier = Modifier.size(20.dp)
         )
     }
 }
