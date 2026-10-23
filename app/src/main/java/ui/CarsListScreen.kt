@@ -178,12 +178,11 @@ fun CarsListScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Secção inferior com os dois botões organizados lado a lado ou em coluna
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Botão para Adicionar Novo Veículo
+
                 OutlinedButton(
                     onClick = { navController.navigate("add_vehicle") },
                     modifier = Modifier

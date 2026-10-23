@@ -245,7 +245,7 @@ fun ProfileScreen(
                 ProfileMenuOption(
                     icon = Icons.Default.Notifications,
                     title = "Notificações",
-                    onClick = { }
+                    onClick = { navController.navigate("notifications")}
                 )
 
                 ProfileMenuOption(
@@ -283,7 +283,6 @@ fun ProfileScreen(
         }
     }
 
-    // Diálogo de Terminar Sessão
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = {
@@ -358,7 +357,6 @@ fun ProfileScreen(
         )
     }
 
-    // Diálogo de Eliminar Conta
     if (showDeleteAccDialog) {
         AlertDialog(
             onDismissRequest = {

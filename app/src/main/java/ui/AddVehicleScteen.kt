@@ -25,7 +25,7 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.launch
 
-// Função para formatar a matrícula mantendo o cursor estável
+
 fun formatPortuguesePlate(input: TextFieldValue): TextFieldValue {
     val clean = input.text.uppercase().replace(Regex("[^A-Z0-9]"), "")
     val chars = clean.toCharArray()
@@ -41,14 +41,13 @@ fun formatPortuguesePlate(input: TextFieldValue): TextFieldValue {
     }
 
     val formattedText = builder.toString()
-    // Mantém o cursor sempre no fim do texto inserido para evitar que salte para trás
     return TextFieldValue(
         text = formattedText,
         selection = TextRange(formattedText.length)
     )
 }
 
-// Função para validar se o formato da matrícula segue o padrão português
+
 fun isValidPortuguesePlate(plate: String): Boolean {
     val cleanPlate = plate.replace("-", "").uppercase()
     val regex = Regex("^[A-Z]{2}[0-9]{2}[A-Z]{2}$|^[0-9]{2}[A-Z]{2}[0-9]{2}$|^[0-9]{2}[0-9]{2}[A-Z]{2}$|^[A-Z]{2}[0-9]{2}[0-9]{2}$")
@@ -61,12 +60,9 @@ fun AddVehicleScreen(
     navController: NavController
 ) {
     val scope = rememberCoroutineScope()
-
-    // Usamos TextFieldValue para gerir o texto e a posição do cursor em simultâneo
     var matriculaField by remember { mutableStateOf(TextFieldValue()) }
     var marcaModelo by remember { mutableStateOf("") }
     var combustivel by remember { mutableStateOf("Gasolina") }
-
     var isSaving by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 

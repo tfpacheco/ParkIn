@@ -21,6 +21,7 @@ import com.parkin.app.ui.CarsListScreen
 import com.parkin.app.ui.HomeScreen
 import com.parkin.app.ui.LoginScreen
 import com.parkin.app.ui.NFCScreen
+import com.parkin.app.ui.NotificationsScreen
 import com.parkin.app.ui.ParkDetailsScreen
 import com.parkin.app.ui.ParksScreen
 import com.parkin.app.ui.PaymentScreen
@@ -138,6 +139,10 @@ fun AppNavigation(
 
         composable("add_vehicle") {
             AddVehicleScreen(navController = navController)
+        }
+
+        composable("notifications") {
+            NotificationsScreen(navController = navController)
         }
     }
 }
