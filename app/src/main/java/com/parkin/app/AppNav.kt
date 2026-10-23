@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.parkin.app.data.Vehicle
 import com.parkin.app.data.supabase
 import com.parkin.app.ui.AddVehicleScreen
 import com.parkin.app.ui.CarsListScreen

@@ -167,7 +167,6 @@ fun NotificationsScreen(navController: NavController) {
         }
     }
 
-    // Marca todas as notificações do utilizador como lidas.
     fun markAllAsRead() {
         scope.launch {
             try {
