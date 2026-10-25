@@ -132,31 +132,25 @@ fun NotificationsScreen(navController: NavController) {
         }
     }
 
-    // Marca uma notificação como lida no Supabase.
-    fun markAsRead(notification: NotificationItem) {
-        if (notification.lida) return
-
+fun markAsRead(notification: NotificationItem) {
+    if (notification.lida) return
         scope.launch {
-            try {
-                val user = supabase.auth.currentUserOrNull()
-                    ?: throw IllegalStateException("Sessão não encontrada.")
 
-                supabase
-                    .from("notificacoes")
-                    .update({
-                        set("lida", true)
-                    }) {
-                        filter {
-                            eq("id", notification.id)
-                            eq("user_id", user.id)
+        try {
+           val user = supabase.auth.currentUserOrNull()
+            ?: throw IllegalStateException("Sessão não encontrada.")
+            supabase.from("notificacoes").update({ set("lida", true) }) {
+                 filter {
+                    eq("id", notification.id)
+                    eq("user_id", user.id)
                         }
                     }
 
-                notifications = notifications.map {
-                    if (it.id == notification.id) {
-                        it.copy(lida = true)
-                    } else {
-                        it
+                    notifications = notifications.map {
+                        if (it.id == notification.id) {
+                            it.copy(lida = true)
+                        } else {
+                             it
                     }
                 }
 

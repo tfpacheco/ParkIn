@@ -51,6 +51,7 @@ import com.parkin.app.ui.theme.LightBg
 import com.parkin.app.ui.theme.SurfaceWhite
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -79,8 +80,6 @@ fun RegisterScreen(
         verticalArrangement = Arrangement.Top,
     ) {
         Spacer(modifier = Modifier.height(40.dp))
-
-        Spacer(modifier = Modifier.height(8.dp))
 
         Image(
             painter = painterResource(id = R.drawable.parkin_logo_f),
@@ -194,7 +193,7 @@ fun RegisterScreen(
                         }
                     },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF444444),
+                        focusedBorderColor = Color(0xFF4169E1),
                         unfocusedBorderColor = Color(0xFF4169E1),
                         focusedTextColor = Color.Black,
                         unfocusedTextColor = Color.Black,
@@ -236,8 +235,7 @@ fun RegisterScreen(
 
                 Button(
                     onClick = {
-                        if (firstName.isEmpty() || lastName.isEmpty() || emailInput.isEmpty() || passwordInput.isEmpty()) {
-                            passwordConfirmation.isEmpty()
+                        if (firstName.isEmpty() || lastName.isEmpty() || emailInput.isEmpty() || passwordInput.isEmpty() || passwordConfirmation.isEmpty()) {
                             mensagem = "Preencha todos os campos"
                             return@Button
                         }
@@ -247,6 +245,7 @@ fun RegisterScreen(
                         }
                         scope.launch {
                             try {
+                                // O Supabase envia o e-mail de confirmação automaticamente ao criar a conta
                                 supabase.auth.signUpWith(Email) {
                                     email = emailInput
                                     password = passwordInput
@@ -256,7 +255,7 @@ fun RegisterScreen(
                                     }
                                 }
                                 mensagem = "Registo efetuado! Verifica o teu email."
-                                kotlinx.coroutines.delay(2000)
+                                delay(2000)
                                 onNavigateBack()
                             } catch (e: Exception) {
                                 mensagem = "Erro: ${e.localizedMessage}"

@@ -56,6 +56,7 @@ import com.parkin.app.data.supabase
 import com.parkin.app.ui.theme.JakartaSans
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.launch
+import androidx.core.content.edit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,28 +70,28 @@ fun ProfileScreen(
 
     val scope = rememberCoroutineScope()
 
-    var showLogoutDialog by remember { mutableStateOf(false) }
-    var showDeleteAccDialog by remember { mutableStateOf(false) }
+    var mensagemDeLogout by remember { mutableStateOf(false) }
+    var mensagemDeEliminarConta by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var mensagem by remember { mutableStateOf("") }
 
-    val user = supabase.auth.currentUserOrNull()
+    val utilizador = supabase.auth.currentUserOrNull()
 
-    val email = user?.email ?: "Sem email"
+    val email = utilizador?.email ?: "Sem email"
 
-    val firstName = user?.userMetadata
+    val first_name = utilizador?.userMetadata
         ?.get("first_name")
         ?.toString()
         ?.replace("\"", "")
         ?: ""
 
-    val lastName = user?.userMetadata
+    val last_name = utilizador?.userMetadata
         ?.get("last_name")
         ?.toString()
         ?.replace("\"", "")
         ?: ""
 
-    val nomeUsuario = "$firstName $lastName".trim()
+    val nomeDoUtilizador = "$first_name $last_name".trim()
 
     Scaffold(
         topBar = {
@@ -135,17 +136,24 @@ fun ProfileScreen(
         }
     ) { innerPadding ->
         Column(
+
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(20.dp),
             horizontalAlignment = Alignment.Start
+
         ) {
+
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+
+
                 Icon(
+
                     imageVector = Icons.Default.Person,
                     contentDescription = "Foto de perfil",
                     modifier = Modifier
@@ -154,17 +162,22 @@ fun ProfileScreen(
                         .background(Color(0xFFE9F0FA))
                         .padding(8.dp),
                     tint = Color(0xFF1D52BA)
+
                 )
 
                 Spacer(modifier = Modifier.width(16.dp))
 
                 Column {
+
+
                     Text(
-                        text = nomeUsuario.ifEmpty { "Utilizador" },
+                        text = nomeDoUtilizador.ifEmpty { "Utilizador" },
                         fontFamily = JakartaSans,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
+
+
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -200,66 +213,63 @@ fun ProfileScreen(
                     )
                     .padding(vertical = 6.dp)
             ) {
-
                 Row(
+
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 6.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
+
                 ) {
                     Row(
+
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
+
                     ) {
                         Icon(
+
                             imageVector = Icons.Default.DarkMode,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(22.dp)
+
                         )
 
                         Text(
+
                             text = "Modo escuro",
                             fontFamily = JakartaSans,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface
+
                         )
                     }
 
-                    Switch(
-                        checked = isDarkTheme,
-                        onCheckedChange = onThemeChange
-                    )
+                    Switch(checked = isDarkTheme, onCheckedChange = onThemeChange)
                 }
 
-                ProfileMenuOption(
-                    icon = Icons.Default.DirectionsCar,
-                    title = "Os meus veículos",
+                ProfileMenuOption(icon = Icons.Default.DirectionsCar, title = "Os meus veículos",
                     onClick = {
                         navController.navigate("cars_list")
                     }
                 )
 
-                ProfileMenuOption(
-                    icon = Icons.Default.Notifications,
-                    title = "Notificações",
+                ProfileMenuOption(icon = Icons.Default.Notifications, title = "Notificações",
                     onClick = { navController.navigate("notifications")}
                 )
 
-                ProfileMenuOption(
-                    icon = Icons.Default.History,
-                    title = "Histórico",
+                ProfileMenuOption(icon = Icons.Default.History, title = "Histórico",
                     onClick = { navController.navigate("historical") }
                 )
 
-                ProfileMenuOption(
-                    icon = Icons.AutoMirrored.Filled.ExitToApp,
+                ProfileMenuOption(icon = Icons.AutoMirrored.Filled.ExitToApp,
                     title = "Terminar sessão",
                     tint = Color(0xFFD32F2F),
                     textColor = Color(0xFFD32F2F),
-                    onClick = { if (!isLoading) showLogoutDialog = true }
+                    onClick = { if (!isLoading) mensagemDeLogout = true }
                 )
 
                 ProfileMenuOption(
@@ -267,88 +277,68 @@ fun ProfileScreen(
                     title = "Eliminar conta",
                     tint = Color(0xFFD32F2F),
                     textColor = Color(0xFFD32F2F),
-                    onClick = { if (!isLoading) showDeleteAccDialog = true }
+                    onClick = { if (!isLoading) mensagemDeEliminarConta = true }
                 )
             }
 
             if (mensagem.isNotBlank()) {
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = mensagem,
-                    color = Color(0xFFD32F2F),
-                    fontSize = 13.sp
-                )
+                Text(text = mensagem, color = Color(0xFFD32F2F), fontSize = 13.sp)
             }
         }
     }
 
-    if (showLogoutDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                if (!isLoading) showLogoutDialog = false
-            },
+    if (mensagemDeLogout) {
+        AlertDialog(onDismissRequest = { if (!isLoading) mensagemDeLogout = false },
             title = {
-                Text(
-                    text = "Terminar sessão",
-                    fontFamily = JakartaSans,
-                    fontWeight = FontWeight.Bold
-                )
+                Text(text = "Terminar sessão", fontFamily = JakartaSans, fontWeight = FontWeight.Bold) },
+
+            text = { Text(text = "Tens a certeza de que queres terminar a sessão?", fontFamily = JakartaSans)
             },
-            text = {
-                Text(
-                    text = "Tens a certeza de que queres terminar a sessão?",
-                    fontFamily = JakartaSans
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    enabled = !isLoading,
-                    onClick = {
-                        scope.launch {
-                            isLoading = true
-                            mensagem = ""
+            confirmButton = { TextButton(
+                enabled = !isLoading,
+                onClick = { scope.launch { isLoading = true
+                    mensagem = ""
 
-                            try {
-                                supabase.auth.signOut()
+                    try {
+                        supabase.auth.signOut()
 
-                                val preferences =
-                                    navController.context.getSharedPreferences(
-                                        "preferences",
-                                        Context.MODE_PRIVATE
-                                    )
+                        val preferences = navController.context.getSharedPreferences(
+                            "preferences",
+                            Context.MODE_PRIVATE
+                        )
 
-                                preferences.edit()
-                                    .remove("is_logged_in")
-                                    .remove("user_email")
-                                    .apply()
-
-                                showLogoutDialog = false
-
-                                navController.navigate("login") {
-                                    popUpTo(0) {
-                                        inclusive = true
-                                    }
-                                    launchSingleTop = true
-                                }
-                            } catch (e: Exception) {
-                                mensagem =
-                                    "Não foi possível terminar sessão. Tenta novamente."
-                            } finally {
-                                isLoading = false
-                            }
+                        preferences.edit { remove("está ativo")
+                            .remove("email_do_utilizador")
                         }
+
+                        mensagemDeLogout = false
+
+                        navController.navigate("login") {
+                            popUpTo(0) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    } catch (e: Exception) {
+                        mensagem =
+                            "Não foi possível terminar sessão."
+                    } finally {
+                        isLoading = false
                     }
-                ) {
-                    Text(
-                        text = if (isLoading) "A sair..." else "Terminar sessão",
-                        color = Color(0xFFD32F2F)
-                    )
                 }
+                }
+            ) {
+                Text(
+                    text = if (isLoading) "A sair..." else "Terminar sessão",
+                    color = Color(0xFFD32F2F)
+                )
+            }
             },
             dismissButton = {
                 TextButton(
-                    onClick = { showLogoutDialog = false },
+                    onClick = { mensagemDeLogout = false },
                     enabled = !isLoading
                 ) {
                     Text("Cancelar")
@@ -357,30 +347,22 @@ fun ProfileScreen(
         )
     }
 
-    if (showDeleteAccDialog) {
+    if (mensagemDeEliminarConta) {
         AlertDialog(
             onDismissRequest = {
-                if (!isLoading) showDeleteAccDialog = false
+                if (!isLoading) mensagemDeEliminarConta = false
             },
             title = {
-                Text(
-                    text = "Eliminar a conta",
-                    fontFamily = JakartaSans,
-                    fontWeight = FontWeight.Bold
-                )
-            },
+                Text(text = "Eliminar a conta", fontFamily = JakartaSans, fontWeight = FontWeight.Bold) },
             text = {
-                Text(
-                    text = "Tens a certeza de que queres eliminar permanentemente a tua conta? Esta ação não pode ser desfeita.",
-                    fontFamily = JakartaSans
+                Text(text = "Tens a certeza de que queres eliminar permanentemente a tua conta? Esta ação não pode ser revertida.", fontFamily = JakartaSans
                 )
             },
             confirmButton = {
                 TextButton(
                     enabled = !isLoading,
                     onClick = {
-                        scope.launch {
-                            isLoading = true
+                        scope.launch {isLoading = true
                             mensagem = ""
 
                             try {
@@ -392,12 +374,12 @@ fun ProfileScreen(
                                         Context.MODE_PRIVATE
                                     )
 
-                                preferences.edit()
-                                    .remove("is_logged_in")
-                                    .remove("user_email")
-                                    .apply()
+                                preferences.edit {
+                                    remove("is_logged_in")
+                                        .remove("email_do_utilizador")
+                                }
 
-                                showDeleteAccDialog = false
+                                mensagemDeEliminarConta = false
 
                                 navController.navigate("login") {
                                     popUpTo(0) {
@@ -415,14 +397,14 @@ fun ProfileScreen(
                     }
                 ) {
                     Text(
-                        text = if (isLoading) "A eliminar..." else "Eliminar conta",
+                        text = if (isLoading) "A eliminar" else "Eliminar conta",
                         color = Color(0xFFD32F2F)
                     )
                 }
             },
             dismissButton = {
                 TextButton(
-                    onClick = { showDeleteAccDialog = false },
+                    onClick = { mensagemDeEliminarConta = false },
                     enabled = !isLoading
                 ) {
                     Text("Cancelar")
@@ -433,18 +415,14 @@ fun ProfileScreen(
 }
 
 @Composable
-fun ProfileMenuOption(
-    icon: ImageVector,
-    title: String,
-    tint: Color = MaterialTheme.colorScheme.primary,
-    textColor: Color = MaterialTheme.colorScheme.onSurface,
-    onClick: () -> Unit
+fun ProfileMenuOption(icon: ImageVector,
+                      title: String,
+                      tint: Color = MaterialTheme.colorScheme.primary,
+                      textColor: Color = MaterialTheme.colorScheme.onSurface,
+                      onClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -452,27 +430,14 @@ fun ProfileMenuOption(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = tint,
-                modifier = Modifier.size(22.dp)
+            Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp)
             )
 
-            Text(
-                text = title,
-                fontFamily = JakartaSans,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = textColor
+            Text(text = title, fontFamily = JakartaSans, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = textColor
             )
         }
 
-        Icon(
-            imageVector = Icons.Default.ChevronRight,
-            contentDescription = null,
-            tint = textColor.copy(alpha = 0.5f),
-            modifier = Modifier.size(20.dp)
+        Icon(imageVector = Icons.Default.ChevronRight, contentDescription = null, tint = textColor.copy(alpha = 0.5f), modifier = Modifier.size(20.dp)
         )
     }
 }

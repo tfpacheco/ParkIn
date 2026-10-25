@@ -42,6 +42,9 @@ android {
 }
 
 dependencies {
+
+        implementation("com.google.maps.android:maps-compose:4.3.3")
+        implementation("com.google.android.gms:play-services-maps:19.0.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -52,6 +55,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.material3)
     implementation(libs.transportation.consumer)
+    implementation(libs.androidx.core.splashscreen)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -92,5 +96,4 @@ dependencies {
     implementation(platform("io.github.jan-tennert.supabase:bom:2.4.0"))
     implementation("io.github.jan-tennert.supabase:auth-kt")
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
-
 }

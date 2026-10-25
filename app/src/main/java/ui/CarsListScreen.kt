@@ -1,3 +1,4 @@
+
 package com.parkin.app.ui
 
 import androidx.compose.foundation.background
@@ -34,6 +35,7 @@ fun CarsListScreen(
     navController: NavController
 ) {
     val scope = rememberCoroutineScope()
+
     var vehicles by remember { mutableStateOf<List<Vehicle>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf("") }
@@ -41,8 +43,11 @@ fun CarsListScreen(
     fun loadVehicles() {
         scope.launch {
             isLoading = true
+            errorMessage = ""
+
             try {
                 val userId = supabase.auth.currentUserOrNull()?.id
+
                 if (userId != null) {
                     val result = supabase.from("vehicles")
                         .select {
@@ -51,7 +56,10 @@ fun CarsListScreen(
                             }
                         }
                         .decodeList<Vehicle>()
+
                     vehicles = result
+                } else {
+                    vehicles = emptyList()
                 }
             } catch (e: Exception) {
                 errorMessage = "Erro ao carregar veículos: ${e.localizedMessage}"
@@ -78,10 +86,19 @@ fun CarsListScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(
+                        onClick = {
+                            navController.navigate("home") {
+                                popUpTo("cars_list") {
+                                    inclusive = true
+                                }
+                                launchSingleTop = true
+                            }
+                        }
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Voltar",
+                            contentDescription = "Voltar à Home",
                             tint = Color.White
                         )
                     }
@@ -99,8 +116,8 @@ fun CarsListScreen(
                     )
             )
         }
-        // Removido o floatingActionButton daqui para evitar sobreposições
     ) { innerPadding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -108,6 +125,7 @@ fun CarsListScreen(
                 .padding(20.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
+
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -115,18 +133,36 @@ fun CarsListScreen(
             ) {
                 when {
                     isLoading -> {
-                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                    }
-                    errorMessage.isNotBlank() -> {
-                        Text(
-                            text = errorMessage,
-                            color = Color.Red,
+                        CircularProgressIndicator(
                             modifier = Modifier.align(Alignment.Center)
                         )
                     }
-                    vehicles.isEmpty() -> {
+
+                    errorMessage.isNotBlank() -> {
                         Column(
                             modifier = Modifier.align(Alignment.Center),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = errorMessage,
+                                color = Color.Red
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            OutlinedButton(
+                                onClick = { loadVehicles() }
+                            ) {
+                                Text("Tentar novamente")
+                            }
+                        }
+                    }
+
+                    vehicles.isEmpty() -> {
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Icon(
@@ -135,15 +171,21 @@ fun CarsListScreen(
                                 modifier = Modifier.size(64.dp),
                                 tint = Color.Gray
                             )
+
                             Spacer(modifier = Modifier.height(12.dp))
+
                             Text(
                                 text = "Ainda não tens veículos registados.",
                                 fontFamily = JakartaSans,
                                 color = Color.Gray,
                                 fontSize = 15.sp
                             )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
                         }
                     }
+
                     else -> {
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -157,17 +199,23 @@ fun CarsListScreen(
                                             try {
                                                 if (vehicle.id != null) {
                                                     supabase.from("vehicles").delete {
-                                                        filter { eq("id", vehicle.id) }
+                                                        filter {
+                                                            eq("id", vehicle.id)
+                                                        }
                                                     }
+
                                                     loadVehicles()
                                                 }
                                             } catch (e: Exception) {
-
+                                                errorMessage =
+                                                    "Erro ao eliminar veículo: ${e.localizedMessage}"
                                             }
                                         }
                                     },
                                     onClick = {
-                                        navController.navigate("cars/${vehicle.id ?: "1"}")
+                                        navController.navigate(
+                                            "cars/${vehicle.id ?: "1"}"
+                                        )
                                     }
                                 )
                             }
@@ -178,49 +226,62 @@ fun CarsListScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Secção inferior com os dois botões organizados lado a lado ou em coluna
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Botão para Adicionar Novo Veículo
                 OutlinedButton(
-                    onClick = { navController.navigate("add_vehicle") },
+                    onClick = {
+                        navController.navigate("add_vehicle")
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF4169E1))
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color(0xFF4169E1)
+                    )
                 ) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = null)
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null
+                    )
+
                     Spacer(modifier = Modifier.width(8.dp))
+
                     Text(
-                        text = "Adicionar Outro Veículo",
+                        text = "Adicionar Veículo",
                         fontFamily = JakartaSans,
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp
                     )
                 }
 
-
                 Button(
                     onClick = {
                         navController.navigate("home") {
-                            popUpTo("cars_list") { inclusive = true }
+                            popUpTo("cars_list") {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
                         }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4169E1))
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF4169E1)
+                    )
                 ) {
                     Icon(
                         imageVector = Icons.Default.Home,
                         contentDescription = null,
                         tint = Color.White
                     )
+
                     Spacer(modifier = Modifier.width(8.dp))
+
                     Text(
                         text = "Avançar",
                         fontFamily = JakartaSans,
@@ -244,8 +305,12 @@ fun VehicleCard(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        )
     ) {
         Row(
             modifier = Modifier
@@ -262,7 +327,9 @@ fun VehicleCard(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF4169E1).copy(alpha = 0.10f)),
+                        .background(
+                            Color(0xFF4169E1).copy(alpha = 0.10f)
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -281,7 +348,9 @@ fun VehicleCard(
                         fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.onSurface
                     )
+
                     Spacer(modifier = Modifier.height(2.dp))
+
                     Text(
                         text = vehicle.licensePlate,
                         fontFamily = JakartaSans,

@@ -47,7 +47,16 @@ fun LoginScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var mensagem by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
+    val session = supabase.auth.currentSessionOrNull()
+    val user = supabase.auth.currentUserOrNull()
 
+    if (user != null && user.emailConfirmedAt != null) {
+
+        onNavigateToHome()
+    } else {
+
+        mensagem = "Por favor, confirma o teu e-mail antes de entrar."
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()

@@ -58,7 +58,7 @@ data class UserProfile(
 fun HomeScreen(navController: NavController) {
     val context = LocalContext.current
 
-    ListenNfcParking()
+    nfcEstado()
 
     var userRole by remember { mutableStateOf("user") }
     var nfcStatus by remember { mutableStateOf(getNfcStatus(context)) }
@@ -91,10 +91,12 @@ fun HomeScreen(navController: NavController) {
     LaunchedEffect(user) {
         if (user != null) {
             try {
-                val profile = supabase.from("users")
-                    .select { filter { eq("id", user.id) } }
-                    .decodeSingleOrNull<UserProfile>()
-                userRole = profile?.role ?: "user"
+                val userProfile = supabase.from("users")
+                    .select {
+                        filter {
+                            eq("id", user.id) } }.decodeSingleOrNull<UserProfile>()
+
+                userRole = userProfile?.role ?: "user"
             } catch (e: Exception) {
                 userRole = "user"
             }
@@ -118,8 +120,7 @@ fun HomeScreen(navController: NavController) {
     Scaffold(
         topBar = { ParkInTopAppBar() }
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
+        Column(modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .background(MaterialTheme.colorScheme.background)
@@ -379,7 +380,7 @@ fun ShortcutCard(
 }
 
 @Composable
-fun ListenNfcParking() {
+fun nfcEstado() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val userId = supabase.auth.currentUserOrNull()?.id

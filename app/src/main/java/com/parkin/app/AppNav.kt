@@ -1,16 +1,11 @@
 package com.parkin.app
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -27,7 +22,7 @@ import com.parkin.app.ui.PaymentScreen
 import com.parkin.app.ui.ProfileScreen
 import com.parkin.app.ui.RegisterScreen
 import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.postgrest.from
+import com.parkin.app.ui.SplashScreen
 
 @Composable
 fun AppNavigation(
@@ -41,24 +36,22 @@ fun AppNavigation(
     }
 
     LaunchedEffect(Unit) {
-        supabase.auth.awaitInitialization()
-        val session = supabase.auth.currentSessionOrNull()
+        try {
+            supabase.auth.awaitInitialization()
+            val session = supabase.auth.currentSessionOrNull()
 
-        startDestination = if (session != null) {
-
-            "home"
-        } else {
-            "login"
+            startDestination = if (session != null) {
+                "home"
+            } else {
+                "login"
+            }
+        } catch (e: Exception) {
+            startDestination = "login"
         }
     }
 
     if (startDestination == null) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
+        SplashScreen()
         return
     }
 
@@ -70,7 +63,10 @@ fun AppNavigation(
             LoginScreen(
                 onNavigateToHome = {
                     navController.navigate("cars_list") {
-                        popUpTo("login") { inclusive = true }
+                        popUpTo("login") {
+                            inclusive = true
+                        }
+                        launchSingleTop = true
                     }
                 },
                 onNavigateToRegister = {
@@ -81,13 +77,20 @@ fun AppNavigation(
 
         composable("register") {
             RegisterScreen(
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
                 onNavigateToHome = {
-                    navController.navigate("home") {
-                        popUpTo("login") { inclusive = true }
+                    navController.navigate("cars_list") {
+                        popUpTo("login") {
+                            inclusive = true
+                        }
+                        launchSingleTop = true
                     }
                 },
-                onNavigateToRegister = { navController.navigate("register") }
+                onNavigateToRegister = {
+                    navController.navigate("register")
+                }
             )
         }
 
@@ -98,9 +101,7 @@ fun AppNavigation(
         }
 
         composable("nfc") {
-            NFCScreen(
-                navController = navController
-            )
+            NFCScreen(navController = navController)
         }
 
         composable("profile") {
@@ -112,14 +113,14 @@ fun AppNavigation(
         }
 
         composable("payment") {
-            PaymentScreen(
-                navController = navController
-            )
+            PaymentScreen(navController = navController)
         }
+
 
         composable("parks") {
             ParksScreen(
-                navController = navController
+                navController = navController,
+                isDarkTheme = isDarkTheme
             )
         }
 
@@ -133,11 +134,15 @@ fun AppNavigation(
         }
 
         composable("cars_list") {
-            CarsListScreen(navController = navController)
+            CarsListScreen(
+                navController = navController
+            )
         }
 
         composable("add_vehicle") {
-            AddVehicleScreen(navController = navController)
+            AddVehicleScreen(
+                navController = navController
+            )
         }
 
         composable("notifications") {
