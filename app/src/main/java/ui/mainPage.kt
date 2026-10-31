@@ -84,8 +84,7 @@ fun HomeScreen(navController: NavController) {
     val user = supabase.auth.currentUserOrNull()
     LaunchedEffect(user) {
         if (user != null) {
-            try {
-                val userProfile = supabase.from("users")
+            try { val userProfile = supabase.from("users")
                     .select {
                         filter {
                             eq("id", user.id) } }.decodeSingleOrNull<UserProfile>()

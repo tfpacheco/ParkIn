@@ -6,7 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.parkin.app.ui.CardScreen
+import com.parkin.app.ui.screens.DigitalCardScreen
 
 @Composable
 fun AccessScreen(navController: NavController) {
@@ -58,7 +58,7 @@ fun AccessScreen(navController: NavController) {
                 }
 
                 1 -> {
-                    CardScreen(
+                    DigitalCardScreen(
                         onNavigateToLogin = {
                             navController.navigate("login") {
                                 popUpTo(0) {

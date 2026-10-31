@@ -1,20 +1,20 @@
 package com.parkin.app.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Contactless
+import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
@@ -31,6 +31,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.parkin.app.data.supabase
 import com.parkin.app.ui.UserProfile
+
 
 
 @Serializable
@@ -53,6 +54,7 @@ data class Plan(
 )
 
 
+
 sealed class CardState {
     object Loading : CardState()
 
@@ -62,21 +64,23 @@ sealed class CardState {
         val cardNumber: String
     ) : CardState()
 
+    object NoCard : CardState()
+    object NoUser : CardState()
+
     data class Error(
         val message: String
     ) : CardState()
-
-    object NoUser : CardState()
 }
+
 
 
 class CardViewModel : ViewModel() {
 
-    private val _uiState =
+    private val _cardState =
         MutableStateFlow<CardState>(CardState.Loading)
 
-    val uiState: StateFlow<CardState> =
-        _uiState.asStateFlow()
+    val cardState: StateFlow<CardState> =
+        _cardState.asStateFlow()
 
     init {
         loadUserData()
@@ -84,17 +88,15 @@ class CardViewModel : ViewModel() {
 
     fun loadUserData() {
         viewModelScope.launch {
-
-            _uiState.value = CardState.Loading
+            _cardState.value = CardState.Loading
 
             try {
                 val user = supabase.auth.currentUserOrNull()
 
                 if (user == null) {
-                    _uiState.value = CardState.NoUser
+                    _cardState.value = CardState.NoUser
                     return@launch
                 }
-
 
                 val profile = supabase
                     .from("users")
@@ -110,11 +112,12 @@ class CardViewModel : ViewModel() {
                     .decodeSingleOrNull<UserProfile>()
 
                 if (profile == null) {
-                    _uiState.value = CardState.Error(
-                        "Não foi encontrado o perfil do utilizador."
+                    _cardState.value = CardState.Error(
+                        "Não foi possível encontrar o perfil do utilizador."
                     )
                     return@launch
                 }
+
 
                 val card = supabase
                     .from("cartoes")
@@ -130,14 +133,11 @@ class CardViewModel : ViewModel() {
                     }
                     .decodeSingleOrNull<AccessCard>()
 
-                if (card == null) {
-                    _uiState.value = CardState.Error(
-                        "Não tens um cartão digital ativo."
-                    )
+
+                if (card == null) { _cardState.value = CardState.NoCard
                     return@launch
                 }
 
-                // Procurar subscrição ativa
 
                 val subscription = supabase
                     .from("subscricoes")
@@ -154,13 +154,11 @@ class CardViewModel : ViewModel() {
                     .decodeSingleOrNull<UserSubscription>()
 
                 if (subscription == null) {
-                    _uiState.value = CardState.Error(
-                        "Não tens uma subscrição ativa."
+                    _cardState.value = CardState.Error(
+                        "Não tens uma subscrição ativa associada ao cartão."
                     )
                     return@launch
                 }
-
-                // Procurar nome do plano
 
                 val plan = supabase
                     .from("planos")
@@ -174,53 +172,69 @@ class CardViewModel : ViewModel() {
                     .decodeSingleOrNull<Plan>()
 
                 if (plan == null) {
-                    _uiState.value = CardState.Error(
-                        "Não foi possível encontrar o teu plano."
+                    _cardState.value = CardState.Error(
+                        "Não foi possível encontrar o plano associado ao cartão."
                     )
                     return@launch
                 }
 
-                _uiState.value = CardState.Success(
+                _cardState.value = CardState.Success(
                     userName = "${profile.firstName} ${profile.lastName}",
                     planName = plan.nome,
                     cardNumber = card.cardNumber
                 )
 
             } catch (e: Exception) {
-                _uiState.value = CardState.Error(
-                    "Erro ao carregar cartão: ${e.localizedMessage}"
+                _cardState.value = CardState.Error(
+                    e.message ?: "Ocorreu um erro ao carregar o cartão."
                 )
             }
         }
     }
 }
 
-// ECRÃ PRINCIPAL
 
 @Composable
 fun CardScreen(
     viewModel: CardViewModel = viewModel(),
-    onNavigateToLogin: () -> Unit
+    onNavigateToLogin: () -> Unit,
+    onAddCard: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+
+    val primary = MaterialTheme.colorScheme.primary
+    val state by viewModel.cardState.collectAsState()
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .background(Color(0xFFF5F6FA))
+            .padding(20.dp),
         contentAlignment = Alignment.Center
     ) {
-        when (val state = uiState) {
+        when (val currentState = state) {
 
             is CardState.Loading -> {
-                CircularProgressIndicator()
+                CircularProgressIndicator(
+                    color = primary
+                )
             }
 
-            is CardState.Success -> {
-                ParkInCardContent(
-                    userName = state.userName,
-                    planName = state.planName,
-                    cardNumber = state.cardNumber
+            is CardState.NoUser -> {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("Sessão não iniciada")
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Button(onClick = onNavigateToLogin) {
+                        Text("Iniciar sessão")
+                    }
+                }
+            }
+
+            is CardState.NoCard -> {
+                NoCardContent(
+                    onAddCard = onAddCard
                 )
             }
 
@@ -229,36 +243,93 @@ fun CardScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = state.message,
-                        color = MaterialTheme.colorScheme.error
+                        text = currentState.message,
+                        textAlign = TextAlign.Center,
+                        color = Color(0xFFB3261E)
                     )
 
-                    Spacer(
-                        modifier = Modifier.height(12.dp)
-                    )
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     Button(
-                        onClick = {
-                            viewModel.loadUserData()
-                        }
+                        onClick = { viewModel.loadUserData() }
                     ) {
                         Text("Tentar novamente")
                     }
                 }
             }
 
-            is CardState.NoUser -> {
-                LaunchedEffect(Unit) {
-                    onNavigateToLogin()
-                }
-
-                Text("Utilizador não autenticado")
+            is CardState.Success -> {
+                ParkInCardContent(
+                    userName = currentState.userName,
+                    planName = currentState.planName,
+                    cardNumber = currentState.cardNumber
+                )
             }
         }
     }
 }
 
-// CARTÃO VISUAL PARKIN
+
+
+@Composable
+fun NoCardContent(
+    onAddCard: () -> Unit
+) {
+    val primary = MaterialTheme.colorScheme.primary
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(
+            imageVector = Icons.Default.CreditCard,
+            contentDescription = "Sem cartão",
+            modifier = Modifier.size(76.dp),
+            tint = primary
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "Ainda não tens um cartão",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+            color = primary,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Text(
+            text = "Adiciona um cartão ParkIn para começares a utilizar os serviços da aplicação.",
+            fontSize = 15.sp,
+            color = Color(0xFF687783),
+            textAlign = TextAlign.Center,
+            lineHeight = 22.sp
+        )
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        Button(
+            onClick = onAddCard,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = primary
+            )
+        ) {
+            Text(
+                text = "Adicionar cartão",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
 
 @Composable
 fun ParkInCardContent(
@@ -267,179 +338,97 @@ fun ParkInCardContent(
     cardNumber: String
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
+        modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Text(
+            text = "O meu cartão",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF172B3A)
+        )
 
-        Box(
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(230.dp)
-                .clip(RoundedCornerShape(24.dp))
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFF1D52BA),
-                            Color(0xFF102A6B)
+                .height(220.dp),
+            shape = RoundedCornerShape(22.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFF176B87),
+                                Color(0xFF123B55)
+                            )
                         )
                     )
-                )
-                .border(
-                    1.dp,
-                    Color.White.copy(alpha = 0.2f),
-                    RoundedCornerShape(24.dp)
-                )
-                .padding(20.dp)
-        ) {
-
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.SpaceBetween
+                    .padding(22.dp)
             ) {
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
-
                     Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
                             text = "ParkIn",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-
-                        Spacer(
-                            modifier = Modifier.width(6.dp)
+                            color = Color.White,
+                            fontSize = 25.sp,
+                            fontWeight = FontWeight.Bold
                         )
 
                         Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = "Verificado",
-                            tint = Color(0xFF4ADE80),
-                            modifier = Modifier.size(18.dp)
+                            imageVector = Icons.Default.Contactless,
+                            contentDescription = "NFC",
+                            tint = Color.White,
+                            modifier = Modifier.size(32.dp)
                         )
                     }
 
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(50.dp))
-                            .background(
-                                Color.White.copy(alpha = 0.15f)
-                            )
-                            .padding(
-                                horizontal = 10.dp,
-                                vertical = 4.dp
-                            )
-                    ) {
+                    Column {
+                        Text(
+                            text = userName,
+                            color = Color.White,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        Spacer(modifier = Modifier.height(5.dp))
+
                         Text(
                             text = planName,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color.White
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 14.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text = cardNumber,
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            letterSpacing = 2.sp
                         )
                     }
                 }
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-
-                    Icon(
-                        imageVector = Icons.Default.Contactless,
-                        contentDescription = "Cartão digital",
-                        tint = Color.White,
-                        modifier = Modifier.size(58.dp)
-                    )
-
-                    Spacer(
-                        modifier = Modifier.height(10.dp)
-                    )
-
-                    Text(
-                        text = "Cartão Digital ParkIn",
-                        fontSize = 13.sp,
-                        color = Color.White.copy(alpha = 0.85f)
-                    )
-                }
-
-                Column {
-                    Text(
-                        text = "TITULAR",
-                        fontSize = 9.sp,
-                        color = Color.White.copy(alpha = 0.6f),
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Text(
-                        text = userName,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White
-                    )
-
-                    Spacer(
-                        modifier = Modifier.height(6.dp)
-                    )
-
-                    Text(
-                        text = cardNumber,
-                        fontSize = 12.sp,
-                        color = Color.White.copy(alpha = 0.7f),
-                        fontWeight = FontWeight.Medium
-                    )
-                }
             }
         }
 
-        Spacer(
-            modifier = Modifier.height(16.dp)
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Text(
+            text = "Cartão ativo",
+            color = Color(0xFF24845A),
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 16.sp
         )
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFFF1F5F9))
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-
-            Icon(
-                imageVector = Icons.Default.Contactless,
-                contentDescription = "NFC",
-                tint = Color(0xFF1D52BA),
-                modifier = Modifier.size(28.dp)
-            )
-
-            Spacer(
-                modifier = Modifier.width(12.dp)
-            )
-
-            Column {
-                Text(
-                    text = "Acesso sem contacto",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-
-                Text(
-                    text = "Aproxime o telemóvel da coluna de acesso",
-                    fontSize = 11.sp,
-                    color = Color.Gray
-                )
-            }
-        }
     }
 }

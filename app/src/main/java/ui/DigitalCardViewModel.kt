@@ -107,7 +107,9 @@ class DigitalCardViewModel : ViewModel() {
             } catch (e: Exception) {
                 _uiState.value = DigitalCardState.Error("Erro ao carregar dados: ${e.localizedMessage}")
             }
+
         }
+
     }
 
     fun toggleAccessMode() {
@@ -117,8 +119,6 @@ class DigitalCardViewModel : ViewModel() {
         }
     }
 }
-
-// --- 3. ECRÃ PRINCIPAL ---
 @Composable
 fun DigitalCardScreen(
     viewModel: DigitalCardViewModel = viewModel(),

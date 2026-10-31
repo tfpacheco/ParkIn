@@ -36,27 +36,20 @@ import com.parkin.app.ui.CardScreen
 fun NFCScreen(navController: NavController) {
 
     val context = LocalContext.current
-
     val primary = MaterialTheme.colorScheme.primary
     val onPrimary = MaterialTheme.colorScheme.onPrimary
     val background = MaterialTheme.colorScheme.background
     val surface = MaterialTheme.colorScheme.surface
     val onSurface = MaterialTheme.colorScheme.onSurface
     val outline = MaterialTheme.colorScheme.outline
-
     val successColor = Color(0xFF22C55E)
     val errorColor = MaterialTheme.colorScheme.error
 
-    var selectedTab by remember {
-        mutableIntStateOf(0)
-    }
+    var selectedTab by remember { mutableIntStateOf(0) }
 
-    var nfcStatus by remember {
-        mutableStateOf(getNfcStatus(context))
-    }
+    var nfcStatus by remember { mutableStateOf(getNfcStatus(context)) }
 
     DisposableEffect(context) {
-
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(
                 ctx: Context?,
@@ -77,9 +70,7 @@ fun NFCScreen(navController: NavController) {
         }
     }
 
-    val infiniteTransition = rememberInfiniteTransition(
-        label = "nfc_pulse"
-    )
+    val infiniteTransition = rememberInfiniteTransition(label = "nfc_pulse")
 
     val scale by infiniteTransition.animateFloat(
         initialValue = 1f,
@@ -143,6 +134,7 @@ fun NFCScreen(navController: NavController) {
         ),
         label = "alpha2"
     )
+
 
     if (
         selectedTab == 0 &&
@@ -220,7 +212,6 @@ fun NFCScreen(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // Seletor NFC / Cartão Digital
 
             Row(
                 modifier = Modifier
@@ -289,9 +280,9 @@ fun NFCScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Conteúdo de cada separador
 
             when (selectedTab) {
+
 
                 0 -> {
 
@@ -301,7 +292,6 @@ fun NFCScreen(navController: NavController) {
                             .weight(1f),
                         contentAlignment = Alignment.Center
                     ) {
-
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -390,14 +380,11 @@ fun NFCScreen(navController: NavController) {
                                             .clip(CircleShape)
                                             .background(
                                                 if (
-                                                    nfcStatus == NfcStatus.ENABLED
-                                                ) {
-                                                    successColor
-                                                } else {
-                                                    errorColor
-                                                }
-                                            )
-                                    )
+                                                    nfcStatus == NfcStatus.ENABLED)
+                                                { successColor
+                                                } else
+                                                { errorColor }
+                                            ))
 
                                     Spacer(
                                         modifier = Modifier.width(8.dp)
@@ -405,14 +392,11 @@ fun NFCScreen(navController: NavController) {
 
                                     Text(
                                         text = when (nfcStatus) {
-                                            NfcStatus.ENABLED ->
-                                                "NFC ativo"
+                                            NfcStatus.ENABLED -> "NFC ativo"
 
-                                            NfcStatus.DISABLED ->
-                                                "NFC desativado"
+                                            NfcStatus.DISABLED -> "NFC desativado"
 
-                                            NfcStatus.NOT_SUPPORTED ->
-                                                "NFC não suportado"
+                                            NfcStatus.NOT_SUPPORTED -> "NFC não suportado"
                                         },
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = onSurface
@@ -431,6 +415,9 @@ fun NFCScreen(navController: NavController) {
                                     inclusive = true
                                 }
                             }
+                        },
+                        onAddCard = {
+                            navController.navigate("add_card")
                         }
                     )
                 }
