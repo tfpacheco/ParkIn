@@ -46,7 +46,7 @@ enum class NfcStatus {
     ENABLED
 }
 
-fun getNfcStatus(context: Context): NfcStatus {
+fun getNfcStatus(context: Context?): NfcStatus {
     val nfcAdapter = NfcAdapter.getDefaultAdapter(context)
     return when {
         nfcAdapter == null -> NfcStatus.NOT_SUPPORTED

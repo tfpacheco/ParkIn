@@ -41,14 +41,13 @@ fun formatPortuguesePlate(input: TextFieldValue): TextFieldValue {
     }
 
     val formattedText = builder.toString()
-    // Mantém o cursor sempre no fim do texto inserido para evitar que salte para trás
     return TextFieldValue(
         text = formattedText,
         selection = TextRange(formattedText.length)
     )
 }
 
-// Função para validar se o formato da matrícula segue o padrão português
+
 fun isValidPortuguesePlate(plate: String): Boolean {
     val cleanPlate = plate.replace("-", "").uppercase()
     val regex = Regex("^[A-Z]{2}[0-9]{2}[A-Z]{2}$|^[0-9]{2}[A-Z]{2}[0-9]{2}$|^[0-9]{2}[0-9]{2}[A-Z]{2}$|^[A-Z]{2}[0-9]{2}[0-9]{2}$")

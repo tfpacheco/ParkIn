@@ -135,7 +135,6 @@ fun NotificationsScreen(navController: NavController) {
 fun markAsRead(notification: NotificationItem) {
     if (notification.lida) return
         scope.launch {
-
         try {
            val user = supabase.auth.currentUserOrNull()
             ?: throw IllegalStateException("Sessão não encontrada.")

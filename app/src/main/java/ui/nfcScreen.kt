@@ -1,3 +1,4 @@
+
 package com.parkin.app.ui
 
 import android.content.BroadcastReceiver
@@ -23,18 +24,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.parkin.app.ui.theme.JakartaSans
+import com.parkin.app.ui.screens.CardScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NFCScreen(navController: NavController) {
+
+    val context = LocalContext.current
 
     val primary = MaterialTheme.colorScheme.primary
     val onPrimary = MaterialTheme.colorScheme.onPrimary
@@ -42,18 +43,33 @@ fun NFCScreen(navController: NavController) {
     val surface = MaterialTheme.colorScheme.surface
     val onSurface = MaterialTheme.colorScheme.onSurface
     val outline = MaterialTheme.colorScheme.outline
+
     val successColor = Color(0xFF22C55E)
     val errorColor = MaterialTheme.colorScheme.error
-    val context = LocalContext.current
-    var nfcStatus by remember { mutableStateOf(getNfcStatus(context)) }
+
+    var selectedTab by remember {
+        mutableIntStateOf(0)
+    }
+
+    var nfcStatus by remember {
+        mutableStateOf(getNfcStatus(context))
+    }
 
     DisposableEffect(context) {
+
         val receiver = object : BroadcastReceiver() {
-            override fun onReceive(ctx: Context?, intent: Intent?) {
+            override fun onReceive(
+                ctx: Context?,
+                intent: Intent?
+            ) {
                 nfcStatus = getNfcStatus(context)
             }
         }
-        val filter = IntentFilter(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED)
+
+        val filter = IntentFilter(
+            NfcAdapter.ACTION_ADAPTER_STATE_CHANGED
+        )
+
         context.registerReceiver(receiver, filter)
 
         onDispose {
@@ -61,62 +77,95 @@ fun NFCScreen(navController: NavController) {
         }
     }
 
-    val infiniteTransition = rememberInfiniteTransition(label = "nfc_pulse")
+    val infiniteTransition = rememberInfiniteTransition(
+        label = "nfc_pulse"
+    )
+
     val scale by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 1.15f,
         animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = EaseInOut),
+            animation = tween(
+                900,
+                easing = EaseInOut
+            ),
             repeatMode = RepeatMode.Reverse
         ),
         label = "scale"
     )
+
     val ringScale1 by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 1.5f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = EaseOut),
+            animation = tween(
+                1200,
+                easing = EaseOut
+            ),
             repeatMode = RepeatMode.Restart
         ),
         label = "ring1"
     )
+
     val ringAlpha1 by infiniteTransition.animateFloat(
         initialValue = 0.5f,
         targetValue = 0f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = EaseOut),
+            animation = tween(1200),
             repeatMode = RepeatMode.Restart
         ),
         label = "alpha1"
     )
+
     val ringScale2 by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 1.5f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1200, delayMillis = 400, easing = EaseOut),
+            animation = tween(
+                1200,
+                delayMillis = 400,
+                easing = EaseOut
+            ),
             repeatMode = RepeatMode.Restart
         ),
         label = "ring2"
     )
+
     val ringAlpha2 by infiniteTransition.animateFloat(
         initialValue = 0.5f,
         targetValue = 0f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1200, delayMillis = 400, easing = EaseOut),
+            animation = tween(
+                1200,
+                delayMillis = 400
+            ),
             repeatMode = RepeatMode.Restart
         ),
         label = "alpha2"
     )
 
-    if (nfcStatus == NfcStatus.DISABLED) {
+    if (
+        selectedTab == 0 &&
+        nfcStatus == NfcStatus.DISABLED
+    ) {
         AlertDialog(
-            onDismissRequest = { },
-            title = { Text("NFC desativado") },
-            text = { Text("Para usar o ParkIn, ativa o NFC nas definições do telemóvel.") },
+            onDismissRequest = {},
+            title = {
+                Text("NFC desativado")
+            },
+            text = {
+                Text(
+                    "Para usar o ParkIn, ativa o NFC nas definições do telemóvel."
+                )
+            },
             confirmButton = {
-                Button(onClick = {
-                    context.startActivity(Intent(Settings.ACTION_NFC_SETTINGS))
-                }) {
+                Button(
+                    onClick = {
+                        context.startActivity(
+                            Intent(Settings.ACTION_NFC_SETTINGS)
+                        )
+                    }
+                ) {
                     Text("Abrir definições")
                 }
             }
@@ -132,11 +181,14 @@ fun NFCScreen(navController: NavController) {
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = onPrimary
-
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(
+                        onClick = {
+                            navController.popBackStack()
+                        }
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Voltar",
@@ -158,95 +210,228 @@ fun NFCScreen(navController: NavController) {
             )
         }
     ) { innerPadding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .background(background)
                 .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.size(200.dp)
+            // Seletor NFC / Cartão Digital
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(surface)
+                    .border(
+                        width = 1.dp,
+                        color = outline,
+                        shape = RoundedCornerShape(14.dp)
+                    )
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
 
                 Box(
                     modifier = Modifier
-                        .size(160.dp)
-                        .scale(ringScale1)
-                        .clip(CircleShape)
-                        .background(primary.copy(alpha = ringAlpha1))
-                )
-
-                Box(
-                    modifier = Modifier
-                        .size(160.dp)
-                        .scale(ringScale2)
-                        .clip(CircleShape)
-                        .background(primary.copy(alpha = ringAlpha2))
-                )
-
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .scale(scale)
-                        .clip(CircleShape)
-                        .background(primary),
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(
+                            if (selectedTab == 0) primary
+                            else Color.Transparent
+                        )
+                        .clickable {
+                            selectedTab = 0
+                        }
+                        .padding(vertical = 13.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Nfc,
-                        contentDescription = "NFC",
-                        tint = onPrimary,
-                        modifier = Modifier.size(56.dp)
+                    Text(
+                        text = "NFC",
+                        color = if (selectedTab == 0) {
+                            onPrimary
+                        } else {
+                            onSurface
+                        },
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(
+                            if (selectedTab == 1) primary
+                            else Color.Transparent
+                        )
+                        .clickable {
+                            selectedTab = 1
+                        }
+                        .padding(vertical = 13.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Cartão Digital",
+                        color = if (selectedTab == 1) {
+                            onPrimary
+                        } else {
+                            onSurface
+                        },
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
-            Text(
-                text = "Aproxime o dispositivo do leitor",
-                style = MaterialTheme.typography.titleMedium,
-                color = onSurface,
-                textAlign = TextAlign.Center
-            )
+            // Conteúdo de cada separador
 
-            Spacer(modifier = Modifier.height(52.dp))
+            when (selectedTab) {
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(surface)
-                    .border(1.dp, outline, MaterialTheme.shapes.medium)
-                    .padding(16.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                0 -> {
+
                     Box(
                         modifier = Modifier
-                            .size(10.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (nfcStatus == NfcStatus.ENABLED) successColor else errorColor
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.size(200.dp)
+                            ) {
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(160.dp)
+                                        .scale(ringScale1)
+                                        .clip(CircleShape)
+                                        .background(
+                                            primary.copy(alpha = ringAlpha1)
+                                        )
+                                )
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(160.dp)
+                                        .scale(ringScale2)
+                                        .clip(CircleShape)
+                                        .background(
+                                            primary.copy(alpha = ringAlpha2)
+                                        )
+                                )
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(120.dp)
+                                        .scale(scale)
+                                        .clip(CircleShape)
+                                        .background(primary),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Nfc,
+                                        contentDescription = "NFC",
+                                        tint = onPrimary,
+                                        modifier = Modifier.size(56.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(
+                                modifier = Modifier.height(40.dp)
                             )
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = when (nfcStatus) {
-                            NfcStatus.ENABLED -> "NFC ativo"
-                            NfcStatus.DISABLED -> "NFC desativado"
-                            NfcStatus.NOT_SUPPORTED -> "NFC não suportado"
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = onSurface
+
+                            Text(
+                                text = "Aproxime o dispositivo do leitor",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = onSurface,
+                                textAlign = TextAlign.Center
+                            )
+
+                            Spacer(
+                                modifier = Modifier.height(52.dp)
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(MaterialTheme.shapes.medium)
+                                    .background(surface)
+                                    .border(
+                                        1.dp,
+                                        outline,
+                                        MaterialTheme.shapes.medium
+                                    )
+                                    .padding(16.dp)
+                            ) {
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+
+                                    Box(
+                                        modifier = Modifier
+                                            .size(10.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                if (
+                                                    nfcStatus == NfcStatus.ENABLED
+                                                ) {
+                                                    successColor
+                                                } else {
+                                                    errorColor
+                                                }
+                                            )
+                                    )
+
+                                    Spacer(
+                                        modifier = Modifier.width(8.dp)
+                                    )
+
+                                    Text(
+                                        text = when (nfcStatus) {
+                                            NfcStatus.ENABLED ->
+                                                "NFC ativo"
+
+                                            NfcStatus.DISABLED ->
+                                                "NFC desativado"
+
+                                            NfcStatus.NOT_SUPPORTED ->
+                                                "NFC não suportado"
+                                        },
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = onSurface
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                1 -> {
+                    CardScreen(
+                        onNavigateToLogin = {
+                            navController.navigate("login") {
+                                popUpTo(0) {
+                                    inclusive = true
+                                }
+                            }
+                        }
                     )
                 }
             }
