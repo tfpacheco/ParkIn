@@ -6,7 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.parkin.app.ui.screens.CardScreen
+import com.parkin.app.ui.CardScreen
 
 @Composable
 fun AccessScreen(navController: NavController) {
@@ -17,7 +17,7 @@ fun AccessScreen(navController: NavController) {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // --- SELETOR NO TOPO (EM CIMA) GARANTIDO ---
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)

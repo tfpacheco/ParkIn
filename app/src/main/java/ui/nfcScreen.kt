@@ -29,7 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.parkin.app.ui.screens.CardScreen
+import com.parkin.app.ui.CardScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -1,5 +1,4 @@
-
-package com.parkin.app.ui.screens
+package com.parkin.app.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,17 +30,8 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.parkin.app.data.supabase
+import com.parkin.app.ui.UserProfile
 
-// MODELOS
-
-@Serializable
-data class userProfile(
-    val id: String,
-    @SerialName("first_name")
-    val firstName: String,
-    @SerialName("last_name")
-    val lastName: String
-)
 
 @Serializable
 data class AccessCard(
@@ -62,7 +52,6 @@ data class Plan(
     val nome: String
 )
 
-// ESTADOS DO ECRÃ
 
 sealed class CardState {
     object Loading : CardState()
@@ -80,7 +69,6 @@ sealed class CardState {
     object NoUser : CardState()
 }
 
-// VIEWMODEL
 
 class CardViewModel : ViewModel() {
 
@@ -119,7 +107,7 @@ class CardViewModel : ViewModel() {
                             eq("id", user.id)
                         }
                     }
-                    .decodeSingleOrNull<userProfile>()
+                    .decodeSingleOrNull<UserProfile>()
 
                 if (profile == null) {
                     _uiState.value = CardState.Error(

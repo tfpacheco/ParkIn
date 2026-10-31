@@ -30,11 +30,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import com.parkin.app.data.supabase // Ajusta para o teu package de instância do Supabase
+import com.parkin.app.data.supabase
 
-// --- 1. MODELOS DE DADOS ---
+
 @Serializable
-data class UserProfile(
+data class userProfile(
     val id: String,
     val firstName: String,
     val lastName: String
@@ -59,7 +59,7 @@ sealed class DigitalCardState {
     object NoUser : DigitalCardState()
 }
 
-// --- 2. VIEWMODEL ---
+
 class DigitalCardViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow<DigitalCardState>(DigitalCardState.Loading)
@@ -83,7 +83,7 @@ class DigitalCardViewModel : ViewModel() {
                     .select(columns = Columns.raw("id, first_name, last_name")) {
                         filter { eq("id", user.id) }
                     }
-                    .decodeSingleOrNull<UserProfile>()
+                    .decodeSingleOrNull<userProfile>()
 
                 val plan = supabase.from("user_plans")
                     .select(columns = Columns.raw("plan_name, card_number, is_active")) {
