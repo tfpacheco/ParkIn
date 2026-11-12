@@ -1,3 +1,4 @@
+
 package com.parkin.app.ui
 
 import androidx.compose.foundation.background
@@ -12,7 +13,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -31,8 +31,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.parkin.app.data.supabase
 import com.parkin.app.ui.UserProfile
-
-
 
 @Serializable
 data class AccessCard(
@@ -53,8 +51,6 @@ data class Plan(
     val nome: String
 )
 
-
-
 sealed class CardState {
     object Loading : CardState()
 
@@ -71,8 +67,6 @@ sealed class CardState {
         val message: String
     ) : CardState()
 }
-
-
 
 class CardViewModel : ViewModel() {
 
@@ -118,7 +112,6 @@ class CardViewModel : ViewModel() {
                     return@launch
                 }
 
-
                 val card = supabase
                     .from("cartoes")
                     .select(
@@ -133,11 +126,10 @@ class CardViewModel : ViewModel() {
                     }
                     .decodeSingleOrNull<AccessCard>()
 
-
-                if (card == null) { _cardState.value = CardState.NoCard
+                if (card == null) {
+                    _cardState.value = CardState.NoCard
                     return@launch
                 }
-
 
                 val subscription = supabase
                     .from("subscricoes")
@@ -193,21 +185,20 @@ class CardViewModel : ViewModel() {
     }
 }
 
-
 @Composable
 fun CardScreen(
     viewModel: CardViewModel = viewModel(),
     onNavigateToLogin: () -> Unit,
     onAddCard: () -> Unit
 ) {
-
-    val primary = MaterialTheme.colorScheme.primary
+    val colorScheme = MaterialTheme.colorScheme
     val state by viewModel.cardState.collectAsState()
+    val onPrimaryContainer = Color.White
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F6FA))
+            .background(colorScheme.background)
             .padding(20.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -215,7 +206,7 @@ fun CardScreen(
 
             is CardState.Loading -> {
                 CircularProgressIndicator(
-                    color = primary
+                    color = colorScheme.primary
                 )
             }
 
@@ -223,7 +214,11 @@ fun CardScreen(
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("Sessão não iniciada")
+                    Text(
+                        text = "Sessão não iniciada",
+                        color = colorScheme.onBackground
+                    )
+
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Button(onClick = onNavigateToLogin) {
@@ -245,7 +240,7 @@ fun CardScreen(
                     Text(
                         text = currentState.message,
                         textAlign = TextAlign.Center,
-                        color = Color(0xFFB3261E)
+                        color = colorScheme.error
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -269,24 +264,23 @@ fun CardScreen(
     }
 }
 
-
-
 @Composable
 fun NoCardContent(
     onAddCard: () -> Unit
 ) {
-    val primary = MaterialTheme.colorScheme.primary
+    val colorScheme = MaterialTheme.colorScheme
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .padding(horizontal = 12.dp)
+            .background(Color.White),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
             imageVector = Icons.Default.CreditCard,
             contentDescription = "Sem cartão",
             modifier = Modifier.size(76.dp),
-            tint = primary
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -295,7 +289,7 @@ fun NoCardContent(
             text = "Ainda não tens um cartão",
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
-            color = primary,
+            color = colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
 
@@ -304,7 +298,7 @@ fun NoCardContent(
         Text(
             text = "Adiciona um cartão ParkIn para começares a utilizar os serviços da aplicação.",
             fontSize = 15.sp,
-            color = Color(0xFF687783),
+            color = colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             lineHeight = 22.sp
         )
@@ -318,7 +312,7 @@ fun NoCardContent(
                 .height(52.dp),
             shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = primary
+                containerColor = colorScheme.primary
             )
         ) {
             Text(
@@ -330,13 +324,14 @@ fun NoCardContent(
     }
 }
 
-
 @Composable
 fun ParkInCardContent(
     userName: String,
     planName: String,
     cardNumber: String
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -345,7 +340,7 @@ fun ParkInCardContent(
             text = "O meu cartão",
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF172B3A)
+            color = colorScheme.onBackground
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -426,7 +421,7 @@ fun ParkInCardContent(
 
         Text(
             text = "Cartão ativo",
-            color = Color(0xFF24845A),
+            color = colorScheme.primary,
             fontWeight = FontWeight.SemiBold,
             fontSize = 16.sp
         )

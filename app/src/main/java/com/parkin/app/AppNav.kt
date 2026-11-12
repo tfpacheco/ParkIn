@@ -24,6 +24,8 @@ import com.parkin.app.ui.ProfileScreen
 import com.parkin.app.ui.RegisterScreen
 import com.parkin.app.ui.SplashScreen
 import io.github.jan.supabase.auth.auth
+import com.parkin.app.ui.CardScreen
+import com.parkin.app.ui.AddCardScreen
 
 @Composable
 fun AppNavigation(
@@ -107,6 +109,27 @@ fun AppNavigation(
 
         composable("access") {
             AccessScreen(navController = navController)
+        }
+
+        composable("add_card") {
+            AddCardScreen(
+                navController = navController
+            )
+        }
+
+        composable("card") {
+            CardScreen(
+                onNavigateToLogin = {
+                    navController.navigate("login") {
+                        popUpTo(0) {
+                            inclusive = true
+                        }
+                    }
+                },
+                onAddCard = {
+                    navController.navigate("add_card")
+                }
+            )
         }
 
 

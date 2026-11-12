@@ -15,7 +15,7 @@ class ParkingNotificationService : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.Main + Job())
     private var isParkingActive = false
     private var startTimeMillis: Long = 0L
-    private var pricePerHour: Double = 1.20 // Exemplo: 1.20€ por hora
+    private var pricePerHour: Double = 1.20
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
@@ -50,7 +50,7 @@ class ParkingNotificationService : Service() {
                 val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 notificationManager.notify(NOTIFICATION_ID, buildNotification(formattedTime, formattedCost))
 
-                delay(1000) // Atualiza a cada 1 segundo
+                delay(1000)
             }
         }
     }

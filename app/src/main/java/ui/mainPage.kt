@@ -111,8 +111,7 @@ fun HomeScreen(navController: NavController) {
     }
 
     Scaffold(
-        topBar = { ParkInTopAppBar() }
-    ) { innerPadding ->
+        topBar = { ParkInTopAppBar() }) { innerPadding ->
         Column(modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
