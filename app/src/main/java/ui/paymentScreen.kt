@@ -1,34 +1,23 @@
+
 package com.parkin.app.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.CreditCard
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import com.parkin.app.data.supabase
-import com.parkin.app.ui.theme.JakartaSans
-import com.stripe.android.paymentsheet.PaymentSheetResult
-import com.stripe.android.paymentsheet.rememberPaymentSheet
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
@@ -38,355 +27,349 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PaymentScreen(
-    navController: NavController
-) {
+fun PaymentScreen(navController: NavController) {
+
     val primary = MaterialTheme.colorScheme.primary
+    val onPrimary = MaterialTheme.colorScheme.onPrimary
+    val background = MaterialTheme.colorScheme.background
+    val surface = MaterialTheme.colorScheme.surface
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val outline = MaterialTheme.colorScheme.outline
 
-    var isLoading by remember { mutableStateOf(true) }
+    val savedState =
+        navController.previousBackStackEntry?.savedStateHandle
+
+    val cardType = savedState?.get<String>("card_type")
+    val cardPrice = savedState?.get<Double>("card_price")
+    val parkId = savedState?.get<String>("park_id")
+
+    val isCardPurchase = cardType != null
+
+    var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var amountCents by remember { mutableIntStateOf(0) }
     var showSuccessDialog by remember { mutableStateOf(false) }
+    var amountCents by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(Unit) {
-        isLoading = true
-        try {
-            withContext(Dispatchers.IO) {
-                val currentUser = supabase.auth.currentUserOrNull()
+    val amountEuros = if (isCardPurchase) {
+        cardPrice ?: 0.0
+    } else {
+        amountCents / 100.0
+    }
 
+    val formattedAmount = String.format(
+        Locale.getDefault(),
+        "%.2f",
+        amountEuros
+    )
 
-                val sessao = supabase.from("sessoes")
+    LaunchedEffect(isCardPurchase, cardType, cardPrice, parkId) {
+
+        if (isCardPurchase) {
+
+            if (
+                cardPrice == null ||
+                cardPrice <= 0.0 ||
+                cardType !in listOf("universal", "especifico")
+            ) {
+                errorMessage = "Dados do cartão inválidos."
+            } else if (
+                cardType == "especifico" &&
+                parkId.isNullOrBlank()
+            ) {
+                errorMessage = "Não foi selecionado nenhum parque."
+            }
+
+        } else {
+
+            isLoading = true
+            errorMessage = null
+
+            try {
+                val user = supabase.auth.currentUserOrNull()
+
+                if (user == null) {
+                    errorMessage = "Inicia sessão novamente."
+                    return@LaunchedEffect
+                }
+
+                val sessions = supabase
+                    .from("sessoes")
                     .select {
                         filter {
-                            if (currentUser != null) {
-                                eq("user_id", currentUser.id)
-                            }
+                            eq("user_id", user.id)
                             eq("estado", "ativa")
                         }
                     }
-                    .decodeSingleOrNull<JsonObject>()
+                    .decodeList<JsonObject>()
 
-                if (sessao != null) {
-                    val horaEntradaStr = sessao["hora_entrada"]?.jsonPrimitive?.contentOrNull
+                val session = sessions.firstOrNull()
 
-                    if (horaEntradaStr != null) {
-                        val inicio = Instant.parse(horaEntradaStr)
-                        val agora = Instant.now()
-
-                        val minutosDecorridos = Duration.between(inicio, agora).toMinutes().coerceAtLeast(1)
-                        val horasDecorridas = minutosDecorridos / 60.0
-
-                        val taxaPorHora = 1.50
-                        val precoTotalEuros = (horasDecorridas * taxaPorHora).coerceAtLeast(0.50)
-                        amountCents = (precoTotalEuros * 100).toInt()
-                    } else {
-                        errorMessage = "Hora de entrada inválida na sessão."
-                    }
-                } else {
+                if (session == null) {
                     errorMessage = "Nenhuma sessão ativa encontrada."
+                    return@LaunchedEffect
                 }
-            }
-        } catch (e: Exception) {
-            errorMessage = "Erro ao calcular o valor: ${e.localizedMessage}"
-        } finally {
-            isLoading = false
-        }
-    }
 
-    val valorEuros = remember(amountCents) {
-        String.format(Locale.getDefault(), "%.2f", amountCents / 100.0)
-    }
+                val entryTime = session["hora_entrada"]
+                    ?.jsonPrimitive
+                    ?.contentOrNull
 
-    val paymentSheet = rememberPaymentSheet { paymentResult ->
-        isLoading = false
-        when (paymentResult) {
-            is PaymentSheetResult.Completed -> {
-                showSuccessDialog = true
+                if (entryTime == null) {
+                    errorMessage = "Hora de entrada não encontrada."
+                    return@LaunchedEffect
+                }
+
+                val start = Instant.parse(entryTime)
+
+                val minutes = Duration.between(
+                    start,
+                    Instant.now()
+                ).toMinutes().coerceAtLeast(0)
+
+                val total = (minutes / 60.0 * 1.50)
+                    .coerceAtLeast(0.50)
+
+                amountCents = (total * 100).toInt()
+
+            } catch (e: Exception) {
+                errorMessage = "Erro ao calcular pagamento: ${e.message}"
+            } finally {
+                isLoading = false
             }
-            is PaymentSheetResult.Canceled -> {}
-            is PaymentSheetResult.Failed -> {}
         }
     }
 
     Scaffold(
+        containerColor = background,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        "Pagamento Seguro",
-                        fontFamily = JakartaSans,
+                        text = "Pagamento",
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = onPrimary
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(
+                        onClick = {
+                            navController.popBackStack()
+                        }
+                    ) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Voltar",
-                            tint = Color.White
+                            tint = onPrimary
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = primary),
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = primary
+                ),
                 modifier = Modifier
-                    .height(70.dp)
+                    .height(64.dp)
                     .clip(
                         RoundedCornerShape(
-                            bottomStart = 20.dp,
-                            bottomEnd = 20.dp,
+                            bottomStart = 18.dp,
+                            bottomEnd = 18.dp
                         )
                     )
             )
         }
-    ) { innerPadding ->
+    ) { padding ->
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .background(MaterialTheme.colorScheme.background)
+                .padding(padding)
+                .background(background),
+            contentAlignment = Alignment.Center
         ) {
-            if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
+            when {
+
+                isLoading -> {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
                         CircularProgressIndicator(color = primary)
+
                         Spacer(modifier = Modifier.height(16.dp))
+
                         Text(
-                            text = "A calcular tempo de estacionamento...",
-                            fontFamily = JakartaSans,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = "A carregar pagamento...",
+                            color = onSurface
                         )
                     }
                 }
-            } else if (errorMessage != null) {
-                Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
+                errorMessage != null -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
                         Text(
-                            text = errorMessage ?: "Ocorreu um erro",
-                            fontFamily = JakartaSans,
+                            text = errorMessage ?: "",
                             color = MaterialTheme.colorScheme.error,
                             textAlign = TextAlign.Center
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { navController.popBackStack() }) {
-                            Text("Voltar", fontFamily = JakartaSans)
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        Button(
+                            onClick = {
+                                navController.popBackStack()
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(54.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = primary
+                            )
+                        ) {
+                            Text("Voltar")
                         }
                     }
                 }
-            } else {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    verticalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
+
+                else -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
 
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
+                            shape = RoundedCornerShape(18.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                containerColor = surface
                             ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                outline
+                            )
                         ) {
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(32.dp),
+                                    .padding(24.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = "Total a Pagar (Tempo Real)",
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontFamily = JakartaSans,
-                                    fontWeight = FontWeight.Medium
+                                    text = if (isCardPurchase) {
+                                        "Compra de cartão"
+                                    } else {
+                                        "Estacionamento"
+                                    },
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = onSurface
                                 )
-                                Spacer(modifier = Modifier.height(6.dp))
+
+                                Spacer(modifier = Modifier.height(20.dp))
+
                                 Text(
-                                    text = "$valorEuros €",
-                                    fontSize = 44.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontFamily = JakartaSans
+                                    text = if (isCardPurchase) {
+                                        if (cardType == "universal") {
+                                            "Cartão Universal"
+                                        } else {
+                                            "Cartão Específico"
+                                        }
+                                    } else {
+                                        "Pagamento da sessão"
+                                    },
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = onSurface
+                                )
+
+                                Spacer(modifier = Modifier.height(24.dp))
+
+                                Text(
+                                    text = "$formattedAmount €",
+                                    style = MaterialTheme.typography.headlineLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = primary
+                                )
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Text(
+                                    text = "Valor total",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(32.dp))
+                        Spacer(modifier = Modifier.height(28.dp))
 
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(20.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(20.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .clip(CircleShape)
-                                        .background(primary.copy(alpha = 0.1f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.CreditCard,
-                                        contentDescription = null,
-                                        tint = primary,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = "Cartão de Crédito / Débito",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 15.sp,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        fontFamily = JakartaSans
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = "Processado via Stripe",
-                                        fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontFamily = JakartaSans
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Lock,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                modifier = Modifier.size(14.dp)
+                        Button(
+                            onClick = {
+                                showSuccessDialog = true
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(54.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            enabled = amountEuros > 0.0,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = primary
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                        ) {
                             Text(
-                                text = "Ambiente encriptado de ponta a ponta (SSL)",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                fontFamily = JakartaSans
+                                text = "Confirmar pagamento",
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }
-
-                    Button(
-                        enabled = !isLoading && amountCents > 0,
-                        onClick = {
-                            isLoading = true
-                            isLoading = false
-                            showSuccessDialog = true
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = primary)
-                    ) {
-                        Text(
-                            text = "Pagar $valorEuros € com Stripe",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            fontFamily = JakartaSans
-                        )
-                    }
-                }
-            }
-
-            if (showSuccessDialog) {
-                Dialog(onDismissRequest = {}) {
-                    PaymentSuccessCard(
-                        valorEuros = valorEuros,
-                        onDismiss = {
-                            showSuccessDialog = false
-                            navController.navigate("home") {
-                                popUpTo("home") { inclusive = true }
-                            }
-                        }
-                    )
                 }
             }
         }
     }
-}
 
-@Composable
-fun PaymentSuccessCard(
-    valorEuros: String,
-    onDismiss: () -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        shape = RoundedCornerShape(32.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 10.dp
-    ) {
-        Column(
-            modifier = Modifier.padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = "Sucesso",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(44.dp)
+    if (showSuccessDialog) {
+
+        AlertDialog(
+            onDismissRequest = {
+                showSuccessDialog = false
+            },
+            title = {
+                Text("Pagamento concluído")
+            },
+            text = {
+                Text(
+                    if (isCardPurchase) {
+                        "A compra do cartão foi simulada com sucesso."
+                    } else {
+                        "O pagamento do estacionamento foi simulado com sucesso."
+                    }
                 )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showSuccessDialog = false
+
+                        if (isCardPurchase) {
+                            navController.popBackStack()
+                        } else {
+                            navController.navigate("home") {
+                                popUpTo("home") {
+                                    inclusive = false
+                                }
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+                ) {
+                    Text("Continuar")
+                }
             }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Text(
-                text = "Pagamento Concluído!",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontFamily = JakartaSans
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "O pagamento de $valorEuros € via Stripe foi processado com sucesso. A sua sessão foi encerrada.",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontFamily = JakartaSans,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            Button(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Text("Voltar ao Início", fontWeight = FontWeight.Bold, fontSize = 15.sp, fontFamily = JakartaSans)
-            }
-        }
+        )
     }
 }

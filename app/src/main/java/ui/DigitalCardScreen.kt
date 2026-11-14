@@ -2,11 +2,16 @@
 package com.parkin.app.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Contactless
 import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,6 +25,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.parkin.app.data.supabase
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
@@ -29,8 +36,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import com.parkin.app.data.supabase
-import com.parkin.app.ui.UserProfile
+import java.util.Locale
+
+private val SheetBlack = Color(0xFF111111)
+private val ParkInBlue = Color(0xFF2563EB)
+private val ParkInLightBlue = Color(0xFFF1F5FF)
+
+// -----------------------------------------------------
+// MODELOS
+// -----------------------------------------------------
 
 @Serializable
 data class AccessCard(
@@ -51,6 +65,12 @@ data class Plan(
     val nome: String
 )
 
+@Serializable
+private data class ParkOption(
+    val id: String,
+    val nome: String
+)
+
 sealed class CardState {
     object Loading : CardState()
 
@@ -67,6 +87,10 @@ sealed class CardState {
         val message: String
     ) : CardState()
 }
+
+// -----------------------------------------------------
+// VIEWMODEL
+// -----------------------------------------------------
 
 class CardViewModel : ViewModel() {
 
@@ -178,22 +202,31 @@ class CardViewModel : ViewModel() {
 
             } catch (e: Exception) {
                 _cardState.value = CardState.Error(
-                    e.message ?: "Ocorreu um erro ao carregar o cartão."
+                    e.message
+                        ?: "Ocorreu um erro ao carregar o cartão."
                 )
             }
         }
     }
 }
 
+// -----------------------------------------------------
+// ECRÃ DO CARTÃO
+// -----------------------------------------------------
+
 @Composable
 fun CardScreen(
+    navController: NavController,
     viewModel: CardViewModel = viewModel(),
-    onNavigateToLogin: () -> Unit,
-    onAddCard: () -> Unit
+    onNavigateToLogin: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val state by viewModel.cardState.collectAsState()
-    val onPrimaryContainer = Color.White
+
+
+    var showAddCardSheet by remember {
+        mutableStateOf(false)
+    }
 
     Box(
         modifier = Modifier
@@ -229,7 +262,9 @@ fun CardScreen(
 
             is CardState.NoCard -> {
                 NoCardContent(
-                    onAddCard = onAddCard
+                    onAddCard = {
+                        showAddCardSheet = true
+                    }
                 )
             }
 
@@ -246,7 +281,9 @@ fun CardScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Button(
-                        onClick = { viewModel.loadUserData() }
+                        onClick = {
+                            viewModel.loadUserData()
+                        }
                     ) {
                         Text("Tentar novamente")
                     }
@@ -262,7 +299,19 @@ fun CardScreen(
             }
         }
     }
+
+
+    if (showAddCardSheet) {
+        AddCardBottomSheet(
+            navController = navController,
+            onDismiss = {
+                showAddCardSheet = false
+            }
+        )
+    }
 }
+
+
 
 @Composable
 fun NoCardContent(
@@ -280,7 +329,7 @@ fun NoCardContent(
         Icon(
             imageVector = Icons.Default.CreditCard,
             contentDescription = "Sem cartão",
-            modifier = Modifier.size(76.dp),
+            modifier = Modifier.size(76.dp)
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -323,6 +372,10 @@ fun NoCardContent(
         }
     }
 }
+
+// -----------------------------------------------------
+// CARTÃO DIGITAL
+// -----------------------------------------------------
 
 @Composable
 fun ParkInCardContent(
@@ -425,5 +478,432 @@ fun ParkInCardContent(
             fontWeight = FontWeight.SemiBold,
             fontSize = 16.sp
         )
+    }
+}
+
+// -----------------------------------------------------
+// ABA INFERIOR PARA ADICIONAR CARTÃO
+// -----------------------------------------------------
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddCardBottomSheet(
+    navController: NavController,
+    onDismiss: () -> Unit
+) {
+    var selectedType by remember {
+        mutableStateOf("universal")
+    }
+
+    var parks by remember {
+        mutableStateOf<List<ParkOption>>(emptyList())
+    }
+
+    var selectedParkId by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    var selectedParkName by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    var loadingParks by remember {
+        mutableStateOf(false)
+    }
+
+    var parkError by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    val price = if (selectedType == "universal") {
+        19.99
+    } else {
+        9.99
+    }
+
+    LaunchedEffect(selectedType) {
+        if (selectedType == "especifico" && parks.isEmpty()) {
+            loadingParks = true
+            parkError = null
+
+            try {
+                parks = supabase
+                    .from("parques")
+                    .select(
+                        columns = Columns.raw("id, nome")
+                    )
+                    .decodeList<ParkOption>()
+
+                if (parks.isEmpty()) {
+                    parkError = "Não existem parques disponíveis."
+                }
+            } catch (e: Exception) {
+                parkError = e.message
+                    ?: "Não foi possível carregar os parques."
+            } finally {
+                loadingParks = false
+            }
+        }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(
+            skipPartiallyExpanded = true
+        ),
+        containerColor = SheetBlack,
+        contentColor = Color.White,
+        dragHandle = {
+            BottomSheetDefaults.DragHandle(
+                color = Color.Gray
+            )
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.82f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 22.dp)
+                .padding(bottom = 28.dp)
+        ) {
+            Text(
+                text = "Adicionar cartão",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Escolhe o tipo de cartão que pretendes utilizar.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.LightGray
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                CardTypeOption(
+                    modifier = Modifier.weight(1f),
+                    title = "Universal",
+                    description = "Todos os parques aderentes",
+                    selected = selectedType == "universal",
+                    onClick = {
+                        selectedType = "universal"
+                        selectedParkId = null
+                        selectedParkName = null
+                    }
+                )
+
+                CardTypeOption(
+                    modifier = Modifier.weight(1f),
+                    title = "Específico",
+                    description = "Um parque à tua escolha",
+                    selected = selectedType == "especifico",
+                    onClick = {
+                        selectedType = "especifico"
+                    }
+                )
+            }
+
+            if (selectedType == "especifico") {
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = "Escolhe o parque",
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                when {
+                    loadingParks -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                color = ParkInBlue
+                            )
+                        }
+                    }
+
+                    parkError != null -> {
+                        Text(
+                            text = parkError!!,
+                            color = Color(0xFFFF7777),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+
+                        TextButton(
+                            onClick = {
+                                parks = emptyList()
+                                selectedType = "universal"
+                                selectedType = "especifico"
+                            }
+                        ) {
+                            Text("Tentar novamente")
+                        }
+                    }
+
+                    else -> {
+                        parks.forEach { park ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 5.dp)
+                                    .background(
+                                        color = if (selectedParkId == park.id) {
+                                            ParkInBlue.copy(alpha = 0.22f)
+                                        } else {
+                                            Color(0xFF202020)
+                                        },
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                                    .border(
+                                        width = 1.dp,
+                                        color = if (selectedParkId == park.id) {
+                                            ParkInBlue
+                                        } else {
+                                            Color.DarkGray
+                                        },
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                                    .clickable {
+                                        selectedParkId = park.id
+                                        selectedParkName = park.nome
+                                    }
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = selectedParkId == park.id,
+                                    onClick = {
+                                        selectedParkId = park.id
+                                        selectedParkName = park.nome
+                                    },
+                                    colors = RadioButtonDefaults.colors(
+                                        selectedColor = ParkInBlue,
+                                        unselectedColor = Color.Gray
+                                    )
+                                )
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                Text(
+                                    text = park.nome,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            HorizontalDivider(
+                color = Color.DarkGray
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = "Resumo da encomenda",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Tipo de cartão",
+                    color = Color.LightGray
+                )
+
+                Text(
+                    text = if (selectedType == "universal") {
+                        "Universal"
+                    } else {
+                        "Específico"
+                    },
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            if (selectedType == "especifico" &&
+                selectedParkName != null
+            ) {
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Parque",
+                        color = Color.LightGray
+                    )
+
+                    Text(
+                        text = selectedParkName!!,
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Preço",
+                    color = Color.LightGray
+                )
+
+                Text(
+                    text = String.format(
+                        Locale("pt", "PT"),
+                        "%.2f €",
+                        price
+                    ),
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = {
+                    val savedStateHandle =
+                        navController.currentBackStackEntry
+                            ?.savedStateHandle
+
+                    savedStateHandle?.set(
+                        "card_type",
+                        selectedType
+                    )
+
+                    savedStateHandle?.set(
+                        "card_price",
+                        price
+                    )
+
+                    savedStateHandle?.set(
+                        "park_id",
+                        selectedParkId
+                    )
+
+                    navController.navigate("payment")
+                },
+                enabled = selectedType == "universal" ||
+                        selectedParkId != null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = ParkInBlue,
+                    disabledContainerColor = Color.DarkGray
+                )
+            ) {
+                Text(
+                    text = "Continuar para pagamento",
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "O cartão só será criado após a confirmação do pagamento.",
+                color = Color.Gray,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+    }
+}
+
+@Composable
+private fun CardTypeOption(
+    modifier: Modifier = Modifier,
+    title: String,
+    description: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = modifier
+            .height(158.dp)
+            .background(
+                color = if (selected) {
+                    Color(0xFF202B40)
+                } else {
+                    Color(0xFF202020)
+                },
+                shape = RoundedCornerShape(16.dp)
+            )
+            .border(
+                width = if (selected) 2.dp else 1.dp,
+                color = if (selected) {
+                    ParkInBlue
+                } else {
+                    Color.DarkGray
+                },
+                shape = RoundedCornerShape(16.dp)
+            )
+            .clickable(onClick = onClick)
+            .padding(14.dp),
+        horizontalAlignment = Alignment.Start,
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Icon(
+            imageVector = Icons.Default.DirectionsCar,
+            contentDescription = null,
+            tint = ParkInBlue,
+            modifier = Modifier
+                .size(38.dp)
+                .background(
+                    ParkInLightBlue,
+                    RoundedCornerShape(10.dp)
+                )
+                .padding(7.dp)
+        )
+
+        Column {
+            Text(
+                text = title,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = description,
+                color = Color.LightGray,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
     }
 }

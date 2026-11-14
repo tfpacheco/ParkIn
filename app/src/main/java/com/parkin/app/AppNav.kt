@@ -1,3 +1,4 @@
+
 package com.parkin.app
 
 import androidx.compose.runtime.Composable
@@ -9,10 +10,12 @@ import androidx.compose.runtime.setValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+
 import com.parkin.app.data.supabase
 import com.parkin.app.ui.AccessScreen
 import com.parkin.app.ui.AddVehicleScreen
 import com.parkin.app.ui.CarsListScreen
+import com.parkin.app.ui.CardScreen
 import com.parkin.app.ui.HomeScreen
 import com.parkin.app.ui.LoginScreen
 import com.parkin.app.ui.NFCScreen
@@ -23,9 +26,8 @@ import com.parkin.app.ui.PaymentScreen
 import com.parkin.app.ui.ProfileScreen
 import com.parkin.app.ui.RegisterScreen
 import com.parkin.app.ui.SplashScreen
+
 import io.github.jan.supabase.auth.auth
-import com.parkin.app.ui.CardScreen
-import com.parkin.app.ui.AddCardScreen
 
 @Composable
 fun AppNavigation(
@@ -41,6 +43,7 @@ fun AppNavigation(
     LaunchedEffect(Unit) {
         try {
             supabase.auth.awaitInitialization()
+
             val session = supabase.auth.currentSessionOrNull()
 
             startDestination = if (session != null) {
@@ -48,6 +51,7 @@ fun AppNavigation(
             } else {
                 "login"
             }
+
         } catch (e: Exception) {
             startDestination = "login"
         }
@@ -62,6 +66,7 @@ fun AppNavigation(
         navController = navController,
         startDestination = startDestination!!
     ) {
+
         composable("login") {
             LoginScreen(
                 onNavigateToHome = {
@@ -104,15 +109,13 @@ fun AppNavigation(
         }
 
         composable("nfc") {
-            NFCScreen(navController = navController)
+            NFCScreen(
+                navController = navController
+            )
         }
 
         composable("access") {
-            AccessScreen(navController = navController)
-        }
-
-        composable("add_card") {
-            AddCardScreen(
+            AccessScreen(
                 navController = navController
             )
         }
@@ -127,11 +130,10 @@ fun AppNavigation(
                     }
                 },
                 onAddCard = {
-                    navController.navigate("add_card")
+                    navController.navigate("nfc")
                 }
             )
         }
-
 
         composable("profile") {
             ProfileScreen(
@@ -142,7 +144,9 @@ fun AppNavigation(
         }
 
         composable("payment") {
-            PaymentScreen(navController = navController)
+            PaymentScreen(
+                navController = navController
+            )
         }
 
         composable("parks") {
@@ -153,7 +157,9 @@ fun AppNavigation(
         }
 
         composable("park/{parkId}") { backStackEntry ->
-            val parkId = backStackEntry.arguments?.getString("parkId") ?: ""
+
+            val parkId = backStackEntry.arguments
+                ?.getString("parkId") ?: ""
 
             ParkDetailsScreen(
                 navController = navController,
@@ -174,7 +180,9 @@ fun AppNavigation(
         }
 
         composable("notifications") {
-            NotificationsScreen(navController = navController)
+            NotificationsScreen(
+                navController = navController
+            )
         }
     }
 }

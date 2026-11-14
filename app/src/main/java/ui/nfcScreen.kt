@@ -46,7 +46,9 @@ fun NFCScreen(navController: NavController) {
     val errorColor = MaterialTheme.colorScheme.error
 
     var selectedTab by remember { mutableIntStateOf(0) }
-
+    var showAddCardSheet by remember {
+        mutableStateOf(false)
+    }
     var nfcStatus by remember { mutableStateOf(getNfcStatus(context)) }
 
     DisposableEffect(context) {
@@ -408,6 +410,7 @@ fun NFCScreen(navController: NavController) {
                 }
 
                 1 -> {
+
                     CardScreen(
                         onNavigateToLogin = {
                             navController.navigate("login") {
@@ -417,9 +420,19 @@ fun NFCScreen(navController: NavController) {
                             }
                         },
                         onAddCard = {
-                            navController.navigate("add_card")
+                            showAddCardSheet = true
                         }
+
                     )
+
+                    if (showAddCardSheet) {
+                        AddCardBottomSheet(
+                            navController = navController,
+                            onDismiss = {
+                                showAddCardSheet = false
+                            }
+                        )
+                    }
                 }
             }
         }
