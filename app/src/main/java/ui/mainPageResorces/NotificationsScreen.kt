@@ -1,5 +1,4 @@
-
-package com.parkin.app.ui
+package com.parkin.app.ui.mainPageResorces
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

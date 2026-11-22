@@ -1,5 +1,4 @@
-
-package com.parkin.app.ui
+package com.parkin.app.ui.nfcEntry
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -28,8 +27,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.parkin.app.ui.CardScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,26 +44,20 @@ fun NFCScreen(navController: NavController) {
     val successColor = Color(0xFF22C55E)
     val errorColor = MaterialTheme.colorScheme.error
 
+    val cardViewModel: DigitalCardViewModel = viewModel()
+
     var selectedTab by remember { mutableIntStateOf(0) }
-    var showAddCardSheet by remember {
-        mutableStateOf(false)
-    }
+    var showAddCardSheet by remember { mutableStateOf(false) }
     var nfcStatus by remember { mutableStateOf(getNfcStatus(context)) }
 
     DisposableEffect(context) {
         val receiver = object : BroadcastReceiver() {
-            override fun onReceive(
-                ctx: Context?,
-                intent: Intent?
-            ) {
+            override fun onReceive(ctx: Context?, intent: Intent?) {
                 nfcStatus = getNfcStatus(context)
             }
         }
 
-        val filter = IntentFilter(
-            NfcAdapter.ACTION_ADAPTER_STATE_CHANGED
-        )
-
+        val filter = IntentFilter(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED)
         context.registerReceiver(receiver, filter)
 
         onDispose {
@@ -78,10 +71,7 @@ fun NFCScreen(navController: NavController) {
         initialValue = 1f,
         targetValue = 1.15f,
         animationSpec = infiniteRepeatable(
-            animation = tween(
-                900,
-                easing = EaseInOut
-            ),
+            animation = tween(900, easing = EaseInOut),
             repeatMode = RepeatMode.Reverse
         ),
         label = "scale"
@@ -91,10 +81,7 @@ fun NFCScreen(navController: NavController) {
         initialValue = 1f,
         targetValue = 1.5f,
         animationSpec = infiniteRepeatable(
-            animation = tween(
-                1200,
-                easing = EaseOut
-            ),
+            animation = tween(1200, easing = EaseOut),
             repeatMode = RepeatMode.Restart
         ),
         label = "ring1"
@@ -114,11 +101,7 @@ fun NFCScreen(navController: NavController) {
         initialValue = 1f,
         targetValue = 1.5f,
         animationSpec = infiniteRepeatable(
-            animation = tween(
-                1200,
-                delayMillis = 400,
-                easing = EaseOut
-            ),
+            animation = tween(1200, delayMillis = 400, easing = EaseOut),
             repeatMode = RepeatMode.Restart
         ),
         label = "ring2"
@@ -128,36 +111,23 @@ fun NFCScreen(navController: NavController) {
         initialValue = 0.5f,
         targetValue = 0f,
         animationSpec = infiniteRepeatable(
-            animation = tween(
-                1200,
-                delayMillis = 400
-            ),
+            animation = tween(1200, delayMillis = 400),
             repeatMode = RepeatMode.Restart
         ),
         label = "alpha2"
     )
 
-
-    if (
-        selectedTab == 0 &&
-        nfcStatus == NfcStatus.DISABLED
-    ) {
+    if (selectedTab == 0 && nfcStatus == NfcStatus.DISABLED) {
         AlertDialog(
             onDismissRequest = {},
-            title = {
-                Text("NFC desativado")
-            },
+            title = { Text("NFC desativado") },
             text = {
-                Text(
-                    "Para usar o ParkIn, ativa o NFC nas definições do telemóvel."
-                )
+                Text("Para usar o ParkIn, ativa o NFC nas definições do telemóvel.")
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        context.startActivity(
-                            Intent(Settings.ACTION_NFC_SETTINGS)
-                        )
+                        context.startActivity(Intent(Settings.ACTION_NFC_SETTINGS))
                     }
                 ) {
                     Text("Abrir definições")
@@ -178,11 +148,7 @@ fun NFCScreen(navController: NavController) {
                     )
                 },
                 navigationIcon = {
-                    IconButton(
-                        onClick = {
-                            navController.popBackStack()
-                        }
-                    ) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Voltar",
@@ -190,17 +156,10 @@ fun NFCScreen(navController: NavController) {
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = primary
-                ),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = primary),
                 modifier = Modifier
                     .height(64.dp)
-                    .clip(
-                        RoundedCornerShape(
-                            bottomStart = 18.dp,
-                            bottomEnd = 18.dp
-                        )
-                    )
+                    .clip(RoundedCornerShape(bottomStart = 18.dp, bottomEnd = 18.dp))
             )
         }
     ) { innerPadding ->
@@ -214,42 +173,27 @@ fun NFCScreen(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(14.dp))
                     .background(surface)
-                    .border(
-                        width = 1.dp,
-                        color = outline,
-                        shape = RoundedCornerShape(14.dp)
-                    )
+                    .border(1.dp, outline, RoundedCornerShape(14.dp))
                     .padding(4.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(
-                            if (selectedTab == 0) primary
-                            else Color.Transparent
-                        )
-                        .clickable {
-                            selectedTab = 0
-                        }
+                        .background(if (selectedTab == 0) primary else Color.Transparent)
+                        .clickable { selectedTab = 0 }
                         .padding(vertical = 13.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "NFC",
-                        color = if (selectedTab == 0) {
-                            onPrimary
-                        } else {
-                            onSurface
-                        },
+                        color = if (selectedTab == 0) onPrimary else onSurface,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -258,23 +202,14 @@ fun NFCScreen(navController: NavController) {
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(
-                            if (selectedTab == 1) primary
-                            else Color.Transparent
-                        )
-                        .clickable {
-                            selectedTab = 1
-                        }
+                        .background(if (selectedTab == 1) primary else Color.Transparent)
+                        .clickable { selectedTab = 1 }
                         .padding(vertical = 13.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "Cartão Digital",
-                        color = if (selectedTab == 1) {
-                            onPrimary
-                        } else {
-                            onSurface
-                        },
+                        color = if (selectedTab == 1) onPrimary else onSurface,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -282,12 +217,9 @@ fun NFCScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(28.dp))
 
-
             when (selectedTab) {
 
-
                 0 -> {
-
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -304,15 +236,12 @@ fun NFCScreen(navController: NavController) {
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier.size(200.dp)
                             ) {
-
                                 Box(
                                     modifier = Modifier
                                         .size(160.dp)
                                         .scale(ringScale1)
                                         .clip(CircleShape)
-                                        .background(
-                                            primary.copy(alpha = ringAlpha1)
-                                        )
+                                        .background(primary.copy(alpha = ringAlpha1))
                                 )
 
                                 Box(
@@ -320,9 +249,7 @@ fun NFCScreen(navController: NavController) {
                                         .size(160.dp)
                                         .scale(ringScale2)
                                         .clip(CircleShape)
-                                        .background(
-                                            primary.copy(alpha = ringAlpha2)
-                                        )
+                                        .background(primary.copy(alpha = ringAlpha2))
                                 )
 
                                 Box(
@@ -342,9 +269,7 @@ fun NFCScreen(navController: NavController) {
                                 }
                             }
 
-                            Spacer(
-                                modifier = Modifier.height(40.dp)
-                            )
+                            Spacer(modifier = Modifier.height(40.dp))
 
                             Text(
                                 text = "Aproxime o dispositivo do leitor",
@@ -353,51 +278,37 @@ fun NFCScreen(navController: NavController) {
                                 textAlign = TextAlign.Center
                             )
 
-                            Spacer(
-                                modifier = Modifier.height(52.dp)
-                            )
+                            Spacer(modifier = Modifier.height(52.dp))
 
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(MaterialTheme.shapes.medium)
                                     .background(surface)
-                                    .border(
-                                        1.dp,
-                                        outline,
-                                        MaterialTheme.shapes.medium
-                                    )
+                                    .border(1.dp, outline, MaterialTheme.shapes.medium)
                                     .padding(16.dp)
                             ) {
-
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center,
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-
                                     Box(
                                         modifier = Modifier
                                             .size(10.dp)
                                             .clip(CircleShape)
                                             .background(
-                                                if (
-                                                    nfcStatus == NfcStatus.ENABLED)
-                                                { successColor
-                                                } else
-                                                { errorColor }
-                                            ))
-
-                                    Spacer(
-                                        modifier = Modifier.width(8.dp)
+                                                if (nfcStatus == NfcStatus.ENABLED) successColor
+                                                else errorColor
+                                            )
                                     )
+
+                                    Spacer(modifier = Modifier.width(8.dp))
 
                                     Text(
                                         text = when (nfcStatus) {
                                             NfcStatus.ENABLED -> "NFC ativo"
-
                                             NfcStatus.DISABLED -> "NFC desativado"
-
                                             NfcStatus.NOT_SUPPORTED -> "NFC não suportado"
                                         },
                                         style = MaterialTheme.typography.bodyMedium,
@@ -410,31 +321,33 @@ fun NFCScreen(navController: NavController) {
                 }
 
                 1 -> {
-
-                    CardScreen(
-                        onNavigateToLogin = {
-                            navController.navigate("login") {
-                                popUpTo(0) {
-                                    inclusive = true
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    ) {
+                        CardScreen(
+                            navController = navController,
+                            onNavigateToLogin = {
+                                navController.navigate("login") {
+                                    popUpTo(0) {
+                                        inclusive = true
+                                    }
                                 }
                             }
-                        },
-                        onAddCard = {
-                            showAddCardSheet = true
-                        }
-
-                    )
-
-                    if (showAddCardSheet) {
-                        AddCardBottomSheet(
-                            navController = navController,
-                            onDismiss = {
-                                showAddCardSheet = false
-                            }
                         )
+                    }
+
+                        if (showAddCardSheet) {
+                            AddCardBottomSheet(
+                                navController = navController,
+                                onDismiss = {
+                                    showAddCardSheet = false
+                                }
+                            )
+                        }
                     }
                 }
             }
         }
     }
-}

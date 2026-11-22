@@ -1,6 +1,8 @@
 
-package com.parkin.app.ui
+package com.parkin.app.ui.mainPageResorces
 
+import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,13 +13,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.parkin.app.data.supabase
+import com.parkin.app.ui.nfcEntry.criarCartao
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
@@ -36,6 +42,9 @@ fun PaymentScreen(navController: NavController) {
     val onSurface = MaterialTheme.colorScheme.onSurface
     val outline = MaterialTheme.colorScheme.outline
 
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     val savedState =
         navController.previousBackStackEntry?.savedStateHandle
 
@@ -45,10 +54,25 @@ fun PaymentScreen(navController: NavController) {
 
     val isCardPurchase = cardType != null
 
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    var showSuccessDialog by remember { mutableStateOf(false) }
-    var amountCents by remember { mutableIntStateOf(0) }
+    var isLoading by remember {
+        mutableStateOf(false)
+    }
+
+    var isProcessing by remember {
+        mutableStateOf(false)
+    }
+
+    var errorMessage by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    var showSuccessDialog by remember {
+        mutableStateOf(false)
+    }
+
+    var amountCents by remember {
+        mutableIntStateOf(0)
+    }
 
     val amountEuros = if (isCardPurchase) {
         cardPrice ?: 0.0
@@ -131,7 +155,8 @@ fun PaymentScreen(navController: NavController) {
                 amountCents = (total * 100).toInt()
 
             } catch (e: Exception) {
-                errorMessage = "Erro ao calcular pagamento: ${e.message}"
+                errorMessage =
+                    "Erro ao calcular pagamento: ${e.message}"
             } finally {
                 isLoading = false
             }
@@ -193,7 +218,7 @@ fun PaymentScreen(navController: NavController) {
                     ) {
                         CircularProgressIndicator(color = primary)
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(Modifier.height(16.dp))
 
                         Text(
                             text = "A carregar pagamento...",
@@ -216,7 +241,7 @@ fun PaymentScreen(navController: NavController) {
                             textAlign = TextAlign.Center
                         )
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(Modifier.height(20.dp))
 
                         Button(
                             onClick = {
@@ -249,7 +274,7 @@ fun PaymentScreen(navController: NavController) {
                             colors = CardDefaults.cardColors(
                                 containerColor = surface
                             ),
-                            border = androidx.compose.foundation.BorderStroke(
+                            border = BorderStroke(
                                 1.dp,
                                 outline
                             )
@@ -260,9 +285,10 @@ fun PaymentScreen(navController: NavController) {
                                     .padding(24.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
+
                                 Text(
                                     text = if (isCardPurchase) {
-                                        "Compra de cartão"
+                                        "Compra / renovação de cartão"
                                     } else {
                                         "Estacionamento"
                                     },
@@ -271,7 +297,7 @@ fun PaymentScreen(navController: NavController) {
                                     color = onSurface
                                 )
 
-                                Spacer(modifier = Modifier.height(20.dp))
+                                Spacer(Modifier.height(20.dp))
 
                                 Text(
                                     text = if (isCardPurchase) {
@@ -287,7 +313,7 @@ fun PaymentScreen(navController: NavController) {
                                     color = onSurface
                                 )
 
-                                Spacer(modifier = Modifier.height(24.dp))
+                                Spacer(Modifier.height(24.dp))
 
                                 Text(
                                     text = "$formattedAmount €",
@@ -296,35 +322,116 @@ fun PaymentScreen(navController: NavController) {
                                     color = primary
                                 )
 
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(Modifier.height(8.dp))
 
                                 Text(
                                     text = "Valor total",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+
+                                if (isCardPurchase) {
+                                    Spacer(Modifier.height(12.dp))
+
+                                    Text(
+                                        text = "Duração da subscrição: 1 mês",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(28.dp))
+                        Spacer(Modifier.height(28.dp))
 
                         Button(
                             onClick = {
-                                showSuccessDialog = true
+
+                                if (isProcessing) {
+                                    return@Button
+                                }
+
+                                if (isCardPurchase) {
+                                    scope.launch {
+                                        isProcessing = true
+                                        errorMessage = null
+
+                                        try {
+                                            // Simulação do pagamento.
+                                            delay(1200)
+
+                                            val resultado = criarCartao(
+                                                context = context,
+                                                tipo = cardType ?: "universal",
+                                                parqueId = if (
+                                                    cardType == "especifico"
+                                                ) {
+                                                    parkId
+                                                } else {
+                                                    null
+                                                }
+                                            )
+
+                                            resultado.fold(
+                                                onSuccess = {
+                                                    showSuccessDialog = true
+                                                },
+                                                onFailure = { erro ->
+                                                    errorMessage =
+                                                        "Erro ao criar ou renovar cartão: " +
+                                                                (erro.message
+                                                                    ?: "Erro desconhecido.")
+
+                                                    Toast.makeText(
+                                                        context,
+                                                        errorMessage,
+                                                        Toast.LENGTH_LONG
+                                                    ).show()
+                                                }
+                                            )
+
+                                        } catch (e: Exception) {
+                                            errorMessage =
+                                                "Erro no pagamento: ${e.message}"
+
+                                            Toast.makeText(
+                                                context,
+                                                errorMessage,
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        } finally {
+                                            isProcessing = false
+                                        }
+                                    }
+
+                                } else {
+                                    showSuccessDialog = true
+                                }
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(54.dp),
                             shape = RoundedCornerShape(12.dp),
-                            enabled = amountEuros > 0.0,
+                            enabled = amountEuros > 0.0 &&
+                                    !isProcessing &&
+                                    !isLoading,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = primary
                             )
                         ) {
-                            Text(
-                                text = "Confirmar pagamento",
-                                fontWeight = FontWeight.Bold
-                            )
+
+                            if (isProcessing) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(22.dp),
+                                    strokeWidth = 2.dp,
+                                    color = onPrimary
+                                )
+                            } else {
+                                Text(
+                                    text = "Confirmar pagamento",
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
@@ -336,7 +443,7 @@ fun PaymentScreen(navController: NavController) {
 
         AlertDialog(
             onDismissRequest = {
-                showSuccessDialog = false
+                // Impedir fechar o diálogo sem confirmar a navegação.
             },
             title = {
                 Text("Pagamento concluído")
@@ -344,7 +451,7 @@ fun PaymentScreen(navController: NavController) {
             text = {
                 Text(
                     if (isCardPurchase) {
-                        "A compra do cartão foi simulada com sucesso."
+                        "O cartão ParkIn foi criado ou renovado com sucesso. A validade da subscrição foi atualizada."
                     } else {
                         "O pagamento do estacionamento foi simulado com sucesso."
                     }
@@ -356,7 +463,12 @@ fun PaymentScreen(navController: NavController) {
                         showSuccessDialog = false
 
                         if (isCardPurchase) {
+                            navController.previousBackStackEntry
+                                ?.savedStateHandle
+                                ?.set("card_created", true)
+
                             navController.popBackStack()
+
                         } else {
                             navController.navigate("home") {
                                 popUpTo("home") {

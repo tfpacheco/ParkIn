@@ -1,10 +1,9 @@
-package com.parkin.app.ui
+package com.parkin.app.ui.nfcEntry
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddCard
 import androidx.compose.material3.*
 import androidx.compose.runtime.*

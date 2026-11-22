@@ -1,4 +1,4 @@
-package com.parkin.app.ui
+package com.parkin.app.ui.vehicles
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -7,7 +7,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -25,7 +24,7 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.launch
 
-// Função para formatar a matrícula mantendo o cursor estável
+
 fun formatPortuguesePlate(input: TextFieldValue): TextFieldValue {
     val clean = input.text.uppercase().replace(Regex("[^A-Z0-9]"), "")
     val chars = clean.toCharArray()

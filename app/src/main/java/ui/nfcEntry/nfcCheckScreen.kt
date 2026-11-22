@@ -1,4 +1,4 @@
-package com.parkin.app.ui
+package com.parkin.app.ui.nfcEntry
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import android.content.Context

@@ -1,4 +1,4 @@
-package com.parkin.app.ui.screens
+package com.parkin.app.ui.nfcEntry
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -73,7 +73,7 @@ class DigitalCardViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.value = DigitalCardState.Loading
             try {
-                val user = supabase.auth.currentUserOrNull()
+                val user = supabase.auth.currentSessionOrNull()?.user
                 if (user == null) {
                     _uiState.value = DigitalCardState.NoUser
                     return@launch

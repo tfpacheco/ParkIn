@@ -1,4 +1,4 @@
-package com.parkin.app.ui
+package com.parkin.app.ui.Parks
 
 import android.content.ActivityNotFoundException
 import android.content.Intent

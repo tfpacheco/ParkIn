@@ -30,6 +30,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.parkin.app.data.supabase
+import com.parkin.app.ui.nfcEntry.NfcStatus
+import com.parkin.app.ui.nfcEntry.getNfcStatus
 import com.parkin.app.ui.theme.JakartaSans
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from

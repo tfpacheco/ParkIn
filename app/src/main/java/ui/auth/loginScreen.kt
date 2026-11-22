@@ -1,4 +1,4 @@
-package com.parkin.app.ui
+package com.parkin.app.ui.auth
 
 import android.content.Context
 import androidx.compose.foundation.Image
